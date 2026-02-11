@@ -1,0 +1,58 @@
+/* Configurações de Cores e Fontes */
+:root {
+    --primary: #222222;
+    --gray-light: #f9f9f9;
+    --gray-text: #888888;
+}
+
+body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+    color: var(--primary);
+}
+
+::-webkit-scrollbar { display: none; }
+
+/* Componentes */
+.header-main {
+    @apply fixed top-0 w-full bg-white/95 backdrop-blur-sm z-50 px-5 py-4 flex justify-between items-center border-b border-gray-100;
+}
+
+.logo { @apply font-bold text-xl tracking-wider uppercase; }
+
+.badge {
+    @apply absolute -top-2 -right-2 bg-black text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center;
+}
+
+.section-title { @apply text-xs text-gray-400 mb-6 tracking-widest uppercase; }
+
+.product-img { @apply w-full h-60 object-cover rounded-sm mb-3 bg-gray-100; }
+
+.product-name { @apply text-sm font-medium truncate; }
+
+.product-footer { @apply flex justify-between items-center mt-1; }
+
+.price { @apply font-semibold; }
+
+.add-btn { @apply p-2 hover:bg-gray-100 rounded-full transition-colors; }
+
+.full-view { @apply fixed inset-0 bg-white z-[60] flex flex-col p-5; }
+
+.view-title { @apply text-2xl font-light; }
+
+.items-list { @apply flex-1 overflow-y-auto space-y-6; }
+
+.empty-msg { @apply text-gray-400 font-light text-center mt-10; }
+
+.footer-action { @apply border-t border-gray-100 pt-5 mt-5; }
+
+.btn-main {
+    @apply w-full bg-black text-white py-4 rounded-sm uppercase tracking-widest text-sm transition-opacity active:opacity-80;
+}
+
+.input-minimal {
+    @apply w-full p-3 bg-white border-b border-gray-200 rounded-none outline-none focus:border-black transition-colors;
+}
+
+.readonly-field { @apply bg-gray-50 text-gray-500; }
+
+.input-group label { @apply text-[10px] text-gray-400 uppercase tracking-wider block mt-4; }
