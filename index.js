@@ -145,8 +145,10 @@ function removeFromCart(index) {
     updateCartUI();
 }
 
-// --- FINALIZAR COMPRA (VERSÃO LIMPA PARA NOVO BANCO) ---
-async function finalizarCompra() {
+// --- FINALIZAR COMPRA ATUALIZADO ---
+async function finalizarCompra(event) {
+    if (event) event.preventDefault(); // Evita o recarregamento da página
+
     const btn = document.getElementById('btn-finalizar');
     const nome = document.getElementById('nome').value;
     const cep = document.getElementById('cep').value;
@@ -158,28 +160,40 @@ async function finalizarCompra() {
 
     const total = cart.reduce((sum, item) => sum + item.price, 0);
 
-    // Salvando no Supabase com as colunas separadas
+    // Salvando no Supabase
     const { error } = await supabaseClient.from('pedidos').insert([{
         nome, 
         cep, 
         rua, 
         numero, 
         total, 
-        itens_json: cart // Agora enviamos o array direto (JSONB)
+        itens_json: cart 
     }]);
 
     if (error) {
         alert("Erro ao salvar pedido: " + error.message);
         if (btn) { btn.innerText = "FINALIZAR COMPRA"; btn.disabled = false; }
     } else {
-        // Preparar mensagem para WhatsApp
-        let mensagem = `*NOVO PEDIDO - BLUSA.MINI*%0A%0A*Cliente:* ${nome}%0A*Endereço:* ${rua}, nº ${numero}%0A*CEP:* ${cep}%0A%0A*ITENS:*%0A`;
-        cart.forEach(item => { mensagem += `- ${item.name} (${item.size}): R$ ${item.price.toFixed(2)}%0A`; });
-        mensagem += `%0A*TOTAL: R$ ${total.toFixed(2)}*`;
+        // Montando a mensagem para o WhatsApp
+        let texto = `*NOVO PEDIDO - BLUSA.MINI*\n\n`;
+        texto += `*Cliente:* ${nome}\n`;
+        texto += `*Endereço:* ${rua}, nº ${numero}\n`;
+        texto += `*CEP:* ${cep}\n\n`;
+        texto += `*ITENS:*\n`;
         
-        window.open(`https://wa.me/87988501105?text=${mensagem}`, '_blank');
+        cart.forEach(item => { 
+            texto += `- ${item.name} (${item.size}): R$ ${item.price.toFixed(2)}\n`; 
+        });
         
-        // Limpeza e retorno
+        texto += `\n*TOTAL: R$ ${total.toFixed(2)}*`;
+        
+        // Link com código do país (55) + seu número
+        const linkZap = `https://wa.me/5587988501105?text=${encodeURIComponent(texto)}`;
+        
+        // Abrindo o WhatsApp
+        window.open(linkZap, '_blank');
+        
+        // Limpeza e retorno à loja
         cart = []; 
         updateCartUI(); 
         document.getElementById('order-form').reset();
