@@ -5,6 +5,7 @@ const supabaseClient = window.supabase.createClient(SB_URL, SB_KEY);
 let cart = [];
 let produtoSelecionado = null; 
 let tamanhoSelecionado = null;
+let corSelecionada = null; // Nova variável para cor
 
 // --- CARREGAR PRODUTOS ---
 async function carregarProdutos() {
@@ -34,7 +35,10 @@ async function carregarProdutos() {
 function abrirModalDetalhes(produto) {
     produtoSelecionado = produto;
     tamanhoSelecionado = null;
+    corSelecionada = null;
+    
     const listaTamanhos = produto.tamanhos ? produto.tamanhos.split(',') : ['P', 'M', 'G', 'GG'];
+    const listaCores = produto.cores ? produto.cores.split(',') : ['Única'];
     
     const modalHTML = `
         <div id="modal-tamanho" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
@@ -50,8 +54,18 @@ function abrirModalDetalhes(produto) {
                     </div>
                     <button onclick="fecharModal()" class="text-slate-300 hover:text-slate-500"><i class="bi bi-x-circle-fill text-2xl"></i></button>
                 </div>
+
+                <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-3 text-center">1. Escolha a Cor</p>
+                <div class="flex flex-wrap justify-center gap-2 mb-6">
+                    ${listaCores.map(cor => `
+                        <button onclick="selecionarCor(this, '${cor.trim()}')" 
+                            class="btn-cor px-4 py-2 text-xs font-bold border border-slate-100 bg-slate-50 rounded-xl transition-all">
+                            ${cor.trim()}
+                        </button>
+                    `).join('')}
+                </div>
                 
-                <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-4 text-center">Escolha o Tamanho</p>
+                <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-3 text-center">2. Escolha o Tamanho</p>
                 <div class="grid grid-cols-4 gap-3 mb-8">
                     ${listaTamanhos.map(tam => `
                         <button onclick="selecionarTamanho(this, '${tam.trim()}')" 
@@ -74,6 +88,17 @@ function abrirModalDetalhes(produto) {
 }
 
 // --- LÓGICA DE SELEÇÃO ---
+function selecionarCor(elemento, cor) {
+    corSelecionada = cor;
+    document.querySelectorAll('.btn-cor').forEach(btn => {
+        btn.classList.remove('bg-black', 'text-white', 'border-black');
+        btn.classList.add('bg-slate-50', 'text-slate-900');
+    });
+    elemento.classList.remove('bg-slate-50', 'text-slate-900');
+    elemento.classList.add('bg-black', 'text-white', 'border-black');
+    validarSelecao();
+}
+
 function selecionarTamanho(elemento, tamanho) {
     tamanhoSelecionado = tamanho;
     document.querySelectorAll('.btn-tamanho').forEach(btn => {
@@ -82,16 +107,21 @@ function selecionarTamanho(elemento, tamanho) {
     });
     elemento.classList.remove('bg-slate-50', 'text-slate-900');
     elemento.classList.add('bg-black', 'text-white', 'border-black');
+    validarSelecao();
+}
 
+function validarSelecao() {
     const btnAdd = document.getElementById('btn-confirmar-add');
-    btnAdd.disabled = false;
-    btnAdd.classList.remove('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
-    btnAdd.classList.add('bg-black', 'text-white', 'shadow-lg', 'active:scale-95');
+    if (tamanhoSelecionado && corSelecionada) {
+        btnAdd.disabled = false;
+        btnAdd.classList.remove('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+        btnAdd.classList.add('bg-black', 'text-white', 'shadow-lg', 'active:scale-95');
+    }
 }
 
 function confirmarAdicao() {
-    if (produtoSelecionado && tamanhoSelecionado) {
-        addToCart(produtoSelecionado.nome, produtoSelecionado.preco, tamanhoSelecionado);
+    if (produtoSelecionado && tamanhoSelecionado && corSelecionada) {
+        addToCart(produtoSelecionado.nome, produtoSelecionado.preco, tamanhoSelecionado, corSelecionada);
         fecharModal(); 
     }
 }
@@ -102,8 +132,8 @@ function fecharModal() {
 }
 
 // --- FUNÇÕES DO CARRINHO ---
-function addToCart(name, price, size) {
-    cart.push({ name, price, size });
+function addToCart(name, price, size, color) {
+    cart.push({ name, price, size, color });
     updateCartUI();
     if (navigator.vibrate) navigator.vibrate(40);
 }
@@ -125,7 +155,8 @@ function updateCartUI() {
             list.innerHTML = cart.map((item, i) => `
                 <div class="flex items-center gap-4 border-b border-slate-50 pb-4">
                     <div class="flex-1">
-                        <h4 class="font-medium text-[13px] text-slate-800">${item.name} <span class="text-slate-400 font-normal">(${item.size})</span></h4>
+                        <h4 class="font-medium text-[13px] text-slate-800">${item.name}</h4>
+                        <p class="text-slate-400 text-[11px]">${item.color} / ${item.size}</p>
                         <p class="font-bold text-slate-900 text-sm">R$ ${item.price.toFixed(2)}</p>
                     </div>
                     <button onclick="removeFromCart(${i})" class="text-red-300 hover:text-red-500 transition-colors p-2">
@@ -145,9 +176,9 @@ function removeFromCart(index) {
     updateCartUI();
 }
 
-// --- FINALIZAR COMPRA ATUALIZADO ---
+// --- FINALIZAR COMPRA ---
 async function finalizarCompra(event) {
-    if (event) event.preventDefault(); // Evita o recarregamento da página
+    if (event) event.preventDefault();
 
     const btn = document.getElementById('btn-finalizar');
     const nome = document.getElementById('nome').value;
@@ -160,7 +191,6 @@ async function finalizarCompra(event) {
 
     const total = cart.reduce((sum, item) => sum + item.price, 0);
 
-    // Salvando no Supabase
     const { error } = await supabaseClient.from('pedidos').insert([{
         nome, 
         cep, 
@@ -174,7 +204,6 @@ async function finalizarCompra(event) {
         alert("Erro ao salvar pedido: " + error.message);
         if (btn) { btn.innerText = "FINALIZAR COMPRA"; btn.disabled = false; }
     } else {
-        // Montando a mensagem para o WhatsApp
         let texto = `*NOVO PEDIDO - BLUSA.MINI*\n\n`;
         texto += `*Cliente:* ${nome}\n`;
         texto += `*Endereço:* ${rua}, nº ${numero}\n`;
@@ -182,18 +211,16 @@ async function finalizarCompra(event) {
         texto += `*ITENS:*\n`;
         
         cart.forEach(item => { 
-            texto += `- ${item.name} (${item.size}): R$ ${item.price.toFixed(2)}\n`; 
+            texto += `- ${item.name} (${item.color} | ${item.size}): R$ ${item.price.toFixed(2)}\n`; 
         });
         
         texto += `\n*TOTAL: R$ ${total.toFixed(2)}*`;
         
-        // Link com código do país (55) + seu número
         const linkZap = `https://wa.me/5587988501105?text=${encodeURIComponent(texto)}`;
         
-        // Abrindo o WhatsApp
-        window.open(linkZap, '_blank');
+        // No celular, location.assign funciona melhor que window.open
+        window.location.assign(linkZap);
         
-        // Limpeza e retorno à loja
         cart = []; 
         updateCartUI(); 
         document.getElementById('order-form').reset();
