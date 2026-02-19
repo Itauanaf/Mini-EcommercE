@@ -5,7 +5,17 @@ const supabaseClient = window.supabase.createClient(SB_URL, SB_KEY);
 let cart = [];
 let produtoSelecionado = null; 
 let tamanhoSelecionado = null;
-let corSelecionada = null; // Nova variável para cor
+let corSelecionada = null;
+
+// Tradutor com as suas cores reais
+const tradutorCores = {
+    "Preto": "#000000",
+    "Branco": "#FFFFFF",
+    "Off-White": "#F8F8F2", 
+    "Marrom": "#5D4037",
+    "Marinho": "#001F3F",
+    "Areia": "#C2B280"
+};
 
 // --- CARREGAR PRODUTOS ---
 async function carregarProdutos() {
@@ -38,7 +48,7 @@ function abrirModalDetalhes(produto) {
     corSelecionada = null;
     
     const listaTamanhos = produto.tamanhos ? produto.tamanhos.split(',') : ['P', 'M', 'G', 'GG'];
-    const listaCores = produto.cores ? produto.cores.split(',') : ['Única'];
+    const listaCores = produto.cores ? produto.cores.split(',') : ['Padrão'];
     
     const modalHTML = `
         <div id="modal-tamanho" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
@@ -56,13 +66,20 @@ function abrirModalDetalhes(produto) {
                 </div>
 
                 <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-3 text-center">1. Escolha a Cor</p>
-                <div class="flex flex-wrap justify-center gap-2 mb-6">
-                    ${listaCores.map(cor => `
-                        <button onclick="selecionarCor(this, '${cor.trim()}')" 
-                            class="btn-cor px-4 py-2 text-xs font-bold border border-slate-100 bg-slate-50 rounded-xl transition-all">
-                            ${cor.trim()}
-                        </button>
-                    `).join('')}
+                <div class="flex flex-wrap justify-center gap-4 mb-6">
+                    ${listaCores.map(cor => {
+                        const nomeCor = cor.trim();
+                        const hex = tradutorCores[nomeCor] || "#cbd5e1"; 
+                        return `
+                            <div class="flex flex-col items-center gap-1">
+                                <button onclick="selecionarCor(this, '${nomeCor}')" 
+                                    style="background-color: ${hex};"
+                                    class="btn-cor w-10 h-10 rounded-full border-2 border-slate-100 shadow-sm transition-all active:scale-90">
+                                </button>
+                                <span class="text-[10px] text-slate-400">${nomeCor}</span>
+                            </div>
+                        `;
+                    }).join('')}
                 </div>
                 
                 <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-3 text-center">2. Escolha o Tamanho</p>
@@ -91,11 +108,9 @@ function abrirModalDetalhes(produto) {
 function selecionarCor(elemento, cor) {
     corSelecionada = cor;
     document.querySelectorAll('.btn-cor').forEach(btn => {
-        btn.classList.remove('bg-black', 'text-white', 'border-black');
-        btn.classList.add('bg-slate-50', 'text-slate-900');
+        btn.classList.remove('border-black', 'ring-2', 'ring-offset-2', 'ring-slate-400');
     });
-    elemento.classList.remove('bg-slate-50', 'text-slate-900');
-    elemento.classList.add('bg-black', 'text-white', 'border-black');
+    elemento.classList.add('border-black', 'ring-2', 'ring-offset-2', 'ring-slate-400');
     validarSelecao();
 }
 
@@ -216,10 +231,11 @@ async function finalizarCompra(event) {
         
         texto += `\n*TOTAL: R$ ${total.toFixed(2)}*`;
         
+        // Link formatado corretamente para WhatsApp
         const linkZap = `https://wa.me/5587988501105?text=${encodeURIComponent(texto)}`;
         
-        // No celular, location.assign funciona melhor que window.open
-        window.location.assign(linkZap);
+        // Redirecionamento forçado (mais estável em mobile)
+        window.location.href = linkZap;
         
         cart = []; 
         updateCartUI(); 
