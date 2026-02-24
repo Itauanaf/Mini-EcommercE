@@ -1,7 +1,9 @@
+// 1. CONFIGURAÇÃO SUPABASE
 const SB_URL = 'https://sfgbwdeochbvqabtjdbf.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmZ2J3ZGVvY2hidnFhYnRqZGJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3NDA5NTQsImV4cCI6MjA4NTMxNjk1NH0.wDBUHJUnHJCS1LNzNPVs9PUEp0EYKUYFOZiKDArpfJU';
 const supabaseClient = window.supabase.createClient(SB_URL, SB_KEY);
 
+// 2. VARIÁVEIS GLOBAIS
 let cart = [];
 let produtoSelecionado = null; 
 let tamanhoSelecionado = null;
@@ -17,6 +19,34 @@ const tradutorCores = {
     "Aria": "#D2D2D2"
 };
 
+// --- LÓGICA DA BARRA DE ANÚNCIOS ---
+const anuncios = [
+    "FRETE FIXO PARA PETROLINA & JUAZEIRO",
+    "PARCELE EM ATÉ 3X SEM JUROS",
+    "PEÇAS EXCLUSIVAS & LIMITADAS",
+    "CUPOM 'EDEN10' NA PRIMEIRA COMPRA"
+];
+
+let anuncioAtual = 0;
+
+function rotacionarAnuncios() {
+    const elementoTexto = document.getElementById('texto-anuncio');
+    if (!elementoTexto) return;
+
+    elementoTexto.style.opacity = '0';
+    elementoTexto.style.transform = 'translateY(5px)';
+
+    setTimeout(() => {
+        anuncioAtual = (anuncioAtual + 1) % anuncios.length;
+        elementoTexto.innerText = anuncios[anuncioAtual];
+        elementoTexto.style.opacity = '1';
+        elementoTexto.style.transform = 'translateY(0px)';
+    }, 700);
+}
+
+setInterval(rotacionarAnuncios, 5000);
+
+// --- CARREGAMENTO DE PRODUTOS ---
 async function carregarProdutos() {
     const { data: produtos, error } = await supabaseClient
         .from('produtos')
@@ -40,6 +70,7 @@ async function carregarProdutos() {
     `).join('');
 }
 
+// --- MODAL DE DETALHES (TAMANHO E COR) ---
 function abrirModalDetalhes(produto) {
     produtoSelecionado = produto;
     tamanhoSelecionado = null;
@@ -49,9 +80,8 @@ function abrirModalDetalhes(produto) {
     const listaCores = produto.Cores ? produto.Cores.split(',') : (produto.cores ? produto.cores.split(',') : ['Única']);
     
     const modalHTML = `
-        <div id="modal-tamanho" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
-            <div class="bg-white w-full max-w-md rounded-t-[3rem] sm:rounded-[3rem] p-8 shadow-2xl transition-all animate-in slide-in-from-bottom duration-300">
-                
+        <div id="modal-tamanho" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
+            <div class="bg-white w-full max-w-md rounded-t-[3rem] sm:rounded-[3rem] p-8 shadow-2xl">
                 <div class="flex justify-between items-start mb-6">
                     <div class="flex gap-4">
                         <img src="${produto.imagem_url}" class="w-16 h-20 object-cover rounded-xl shadow-sm">
@@ -98,15 +128,12 @@ function abrirModalDetalhes(produto) {
             </div>
         </div>
     `;
-    
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
 function selecionarCor(elemento, cor) {
     corSelecionada = cor;
-    document.querySelectorAll('.btn-cor').forEach(btn => {
-        btn.classList.remove('border-black', 'ring-2', 'ring-offset-2', 'ring-slate-400');
-    });
+    document.querySelectorAll('.btn-cor').forEach(btn => btn.classList.remove('border-black', 'ring-2', 'ring-offset-2', 'ring-slate-400'));
     elemento.classList.add('border-black', 'ring-2', 'ring-offset-2', 'ring-slate-400');
     validarSelecao();
 }
@@ -143,6 +170,7 @@ function fecharModal() {
     if (modal) modal.remove();
 }
 
+// --- GESTÃO DA SACOLA ---
 function addToCart(name, price, size, color) {
     cart.push({ name, price, size, color });
     updateCartUI();
@@ -186,6 +214,7 @@ function removeFromCart(index) {
     updateCartUI();
 }
 
+// --- FINALIZAÇÃO E CEP ---
 async function finalizarCompra(event) {
     if (event) event.preventDefault();
 
@@ -239,6 +268,7 @@ async function buscaCEP(cep) {
     }
 }
 
+// --- NAVEGAÇÃO ---
 function showView(viewId) {
     document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
     document.getElementById(viewId).classList.remove('hidden');
@@ -250,4 +280,5 @@ function checkout() {
     showView('checkout-view');
 }
 
+// INICIALIZAÇÃO
 carregarProdutos();

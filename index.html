@@ -10,14 +10,24 @@
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .view-section { transition: all 0.3s ease; }
-        /* Esconde a barra de rolagem mas permite rolar */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Ajuste para animação suave da barra */
+        #texto-anuncio { transition: all 0.7s ease-in-out; }
     </style>
 </head>
 <body class="bg-white text-slate-900">
 
-    <header class="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 px-6 py-5 flex justify-between items-center border-b border-slate-50">
+    <div class="w-full bg-black py-2.5 px-4 overflow-hidden fixed top-0 z-[100]">
+        <div id="barra-anuncios" class="flex justify-center items-center">
+            <p id="texto-anuncio" class="text-[9px] font-bold text-white uppercase tracking-[0.4em] text-center">
+                FRETE FIXO PARA PETROLINA & JUAZEIRO
+            </p>
+        </div>
+    </div>
+
+    <header class="fixed top-[34px] w-full bg-white/80 backdrop-blur-md z-50 px-6 py-5 flex justify-between items-center border-b border-slate-50">
         <span class="font-bold text-xl tracking-tighter italic">ÉDEN.WEAR</span>
         <button onclick="showView('cart-view')" class="relative p-1">
             <i class="bi bi-bag-heart text-2xl"></i>
@@ -25,7 +35,7 @@
         </button>
     </header>
 
-    <div class="h-24"></div>
+    <div class="h-32"></div>
 
     <main id="shop-view" class="view-section px-6">
         <div class="mb-10">
@@ -37,7 +47,7 @@
         </div>
     </main>
 
-    <section id="cart-view" class="view-section hidden fixed inset-0 bg-white z-[60] flex flex-col px-6 py-8">
+    <section id="cart-view" class="view-section hidden fixed inset-0 bg-white z-[160] flex flex-col px-6 py-8">
         <div class="flex justify-between items-end mb-10">
             <h2 class="text-3xl font-semibold">Sua Sacola</h2>
             <button onclick="showView('shop-view')"><i class="bi bi-x-lg text-2xl"></i></button>
@@ -52,7 +62,7 @@
         </div>
     </section>
 
-    <section id="checkout-view" class="view-section hidden fixed inset-0 bg-white z-[70] flex flex-col px-6 py-8">
+    <section id="checkout-view" class="view-section hidden fixed inset-0 bg-white z-[170] flex flex-col px-6 py-8">
         <div class="flex items-center gap-4 mb-10">
             <button onclick="showView('cart-view')"><i class="bi bi-arrow-left text-2xl"></i></button>
             <h2 class="text-2xl font-semibold">Finalizar</h2>
@@ -93,20 +103,19 @@
     </section>
 
     <footer class="mt-24 pb-20 bg-white">
-    <div class="max-w-6xl mx-auto px-6">
-        <div class="w-full h-[1px] bg-slate-100 mb-12"></div>
-        
-        <div class="flex flex-col items-center justify-center">
-            <h2 class="text-[11px] font-bold tracking-[0.8em] text-slate-900 uppercase mb-3">
-                ÉDEN.WEAR
-            </h2>
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="w-full h-[1px] bg-slate-100 mb-12"></div>
             
-            <p class="text-[9px] text-slate-500 uppercase tracking-[0.4em] font-medium">
-                © 2026<a href="admin.html" class="text-transparent cursor-default ml-1">.</a>
-            </p>
+            <div class="flex flex-col items-center justify-center">
+                <h2 class="text-[11px] font-bold tracking-[0.8em] text-slate-900 uppercase mb-3">
+                    ÉDEN.WEAR
+                </h2>
+                <p class="text-[9px] text-slate-500 uppercase tracking-[0.4em] font-medium">
+                    © 2026<a href="admin.html" class="text-transparent cursor-default ml-1">.</a>
+                </p>
+            </div>
         </div>
-    </div>
-</footer>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="index.js"></script>
