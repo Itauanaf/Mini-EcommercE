@@ -7,17 +7,16 @@ let produtoSelecionado = null;
 let tamanhoSelecionado = null;
 let corSelecionada = null;
 
-// Tradutor com as suas cores reais
 const tradutorCores = {
     "Preto": "#000000",
     "Branco": "#FFFFFF",
     "Off-White": "#F8F8F2", 
     "Marrom": "#5D4037",
     "Marinho": "#001F3F",
-    "Areia": "#C2B280"
+    "Areia": "#C2B280",
+    "Aria": "#D2D2D2"
 };
 
-// --- CARREGAR PRODUTOS ---
 async function carregarProdutos() {
     const { data: produtos, error } = await supabaseClient
         .from('produtos')
@@ -41,14 +40,13 @@ async function carregarProdutos() {
     `).join('');
 }
 
-// --- MODAL DE DETALHES ---
 function abrirModalDetalhes(produto) {
     produtoSelecionado = produto;
     tamanhoSelecionado = null;
     corSelecionada = null;
     
     const listaTamanhos = produto.tamanhos ? produto.tamanhos.split(',') : ['P', 'M', 'G', 'GG'];
-    const listaCores = produto.cores ? produto.cores.split(',') : ['Padrão'];
+    const listaCores = produto.Cores ? produto.Cores.split(',') : (produto.cores ? produto.cores.split(',') : ['Única']);
     
     const modalHTML = `
         <div id="modal-tamanho" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
@@ -73,8 +71,8 @@ function abrirModalDetalhes(produto) {
                         return `
                             <div class="flex flex-col items-center gap-1">
                                 <button onclick="selecionarCor(this, '${nomeCor}')" 
-                                    style="background-color: ${hex};"
-                                    class="btn-cor w-10 h-10 rounded-full border-2 border-slate-100 shadow-sm transition-all active:scale-90">
+                                    style="background-color: ${hex}; ${nomeCor === 'Branco' ? 'border: 1px solid #eee' : ''}"
+                                    class="btn-cor w-10 h-10 rounded-full border-2 border-transparent shadow-sm transition-all active:scale-90">
                                 </button>
                                 <span class="text-[10px] text-slate-400">${nomeCor}</span>
                             </div>
@@ -104,7 +102,6 @@ function abrirModalDetalhes(produto) {
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
-// --- LÓGICA DE SELEÇÃO ---
 function selecionarCor(elemento, cor) {
     corSelecionada = cor;
     document.querySelectorAll('.btn-cor').forEach(btn => {
@@ -146,11 +143,9 @@ function fecharModal() {
     if (modal) modal.remove();
 }
 
-// --- FUNÇÕES DO CARRINHO ---
 function addToCart(name, price, size, color) {
     cart.push({ name, price, size, color });
     updateCartUI();
-    if (navigator.vibrate) navigator.vibrate(40);
 }
 
 function updateCartUI() {
@@ -165,16 +160,16 @@ function updateCartUI() {
 
     if (list) {
         if (cart.length === 0) {
-            list.innerHTML = `<p class="text-center opacity-30 mt-10 text-sm">Sua sacola está vazia</p>`;
+            list.innerHTML = `<p class="text-center opacity-30 mt-10 text-sm italic">Sua sacola está vazia</p>`;
         } else {
             list.innerHTML = cart.map((item, i) => `
                 <div class="flex items-center gap-4 border-b border-slate-50 pb-4">
                     <div class="flex-1">
                         <h4 class="font-medium text-[13px] text-slate-800">${item.name}</h4>
-                        <p class="text-slate-400 text-[11px]">${item.color} / ${item.size}</p>
+                        <p class="text-slate-400 text-[11px] uppercase tracking-wider">${item.color} / ${item.size}</p>
                         <p class="font-bold text-slate-900 text-sm">R$ ${item.price.toFixed(2)}</p>
                     </div>
-                    <button onclick="removeFromCart(${i})" class="text-red-300 hover:text-red-500 transition-colors p-2">
+                    <button onclick="removeFromCart(${i})" class="text-slate-300 hover:text-red-500 transition-colors p-2">
                         <i class="bi bi-trash3"></i>
                     </button>
                 </div>
@@ -191,7 +186,6 @@ function removeFromCart(index) {
     updateCartUI();
 }
 
-// --- FINALIZAR COMPRA ---
 async function finalizarCompra(event) {
     if (event) event.preventDefault();
 
@@ -200,6 +194,7 @@ async function finalizarCompra(event) {
     const cep = document.getElementById('cep').value;
     const rua = document.getElementById('rua').value;
     const numero = document.getElementById('numero').value;
+    const pagamento = document.querySelector('input[name="pagamento"]:checked').value;
 
     if (!nome || !numero || !cep) return alert("Preencha todos os dados de entrega.");
     if (btn) { btn.innerText = "PROCESSANDO..."; btn.disabled = true; }
@@ -207,35 +202,22 @@ async function finalizarCompra(event) {
     const total = cart.reduce((sum, item) => sum + item.price, 0);
 
     const { error } = await supabaseClient.from('pedidos').insert([{
-        nome, 
-        cep, 
-        rua, 
-        numero, 
-        total, 
-        itens_json: cart 
+        nome, cep, rua, numero, total, pagamento, itens_json: cart 
     }]);
 
     if (error) {
-        alert("Erro ao salvar pedido: " + error.message);
+        alert("Erro ao salvar: " + error.message);
         if (btn) { btn.innerText = "FINALIZAR COMPRA"; btn.disabled = false; }
     } else {
-        let texto = `*NOVO PEDIDO - BLUSA.MINI*\n\n`;
+        let texto = `*NOVO PEDIDO - ÉDEN.WEAR*\n\n`;
         texto += `*Cliente:* ${nome}\n`;
         texto += `*Endereço:* ${rua}, nº ${numero}\n`;
-        texto += `*CEP:* ${cep}\n\n`;
+        texto += `*Pagamento:* ${pagamento}\n\n`;
         texto += `*ITENS:*\n`;
-        
-        cart.forEach(item => { 
-            texto += `- ${item.name} (${item.color} | ${item.size}): R$ ${item.price.toFixed(2)}\n`; 
-        });
-        
+        cart.forEach(item => { texto += `- ${item.name} (${item.color} | ${item.size})\n`; });
         texto += `\n*TOTAL: R$ ${total.toFixed(2)}*`;
         
-        // Link formatado corretamente para WhatsApp
-        const linkZap = `https://wa.me/5587988501105?text=${encodeURIComponent(texto)}`;
-        
-        // Redirecionamento forçado (mais estável em mobile)
-        window.location.href = linkZap;
+        window.location.href = `https://wa.me/5587988501105?text=${encodeURIComponent(texto)}`;
         
         cart = []; 
         updateCartUI(); 
@@ -245,7 +227,6 @@ async function finalizarCompra(event) {
     }
 }
 
-// --- UTILITÁRIOS ---
 async function buscaCEP(cep) {
     const valor = cep.replace(/\D/g, '');
     if (valor.length === 8) {

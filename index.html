@@ -3,19 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AosCéus | Store</title>
+    <title>Éden | Store</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .view-section { transition: all 0.3s ease; }
+        /* Esconde a barra de rolagem mas permite rolar */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-white text-slate-900">
 
     <header class="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 px-6 py-5 flex justify-between items-center border-b border-slate-50">
-        <span class="font-bold text-xl tracking-tighter italic">AOSCÉUS</span>
+        <span class="font-bold text-xl tracking-tighter italic">ÉDEN.WEAR</span>
         <button onclick="showView('cart-view')" class="relative p-1">
             <i class="bi bi-bag-heart text-2xl"></i>
             <span id="cart-count" class="absolute -top-1 -right-1 bg-black text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold hidden">0</span>
@@ -39,34 +42,72 @@
             <h2 class="text-3xl font-semibold">Sua Sacola</h2>
             <button onclick="showView('shop-view')"><i class="bi bi-x-lg text-2xl"></i></button>
         </div>
-        <div id="cart-items-list" class="flex-1 overflow-y-auto space-y-8"></div>
+        <div id="cart-items-list" class="flex-1 overflow-y-auto space-y-8 no-scrollbar"></div>
         <div class="pt-6 border-t border-slate-100">
             <div class="flex justify-between items-center mb-6">
                 <span class="text-slate-400">Total</span>
                 <span id="cart-total-value" class="text-2xl font-bold">R$ 0,00</span>
             </div>
-            <button onclick="checkout()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-semibold">FECHAR PEDIDO</button>
+            <button onclick="checkout()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-semibold active:scale-95 transition-transform">FECHAR PEDIDO</button>
         </div>
     </section>
 
     <section id="checkout-view" class="view-section hidden fixed inset-0 bg-white z-[70] flex flex-col px-6 py-8">
         <div class="flex items-center gap-4 mb-10">
             <button onclick="showView('cart-view')"><i class="bi bi-arrow-left text-2xl"></i></button>
-            <h2 class="text-2xl font-semibold">Entrega</h2>
+            <h2 class="text-2xl font-semibold">Finalizar</h2>
         </div>
-        <form id="order-form" class="space-y-6 flex-1 overflow-y-auto">
-            <input type="text" id="nome" placeholder="Nome Completo" class="w-full p-4 bg-slate-50 rounded-xl outline-none">
-            <input type="text" id="cep" placeholder="CEP" oninput="buscaCEP(this.value)" class="w-full p-4 bg-slate-50 rounded-xl outline-none">
+        
+        <form id="order-form" class="space-y-5 flex-1 overflow-y-auto no-scrollbar pb-10">
+            <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-2">Dados de Entrega</p>
+            <input type="text" id="nome" placeholder="Nome Completo" class="w-full p-4 bg-slate-50 rounded-xl outline-none border border-transparent focus:border-slate-200">
+            <input type="text" id="cep" placeholder="CEP" oninput="buscaCEP(this.value)" class="w-full p-4 bg-slate-50 rounded-xl outline-none border border-transparent focus:border-slate-200">
             <input type="text" id="rua" placeholder="Endereço" readonly class="w-full p-4 bg-slate-100 text-slate-500 rounded-xl">
-            <input type="text" id="numero" placeholder="Número" class="w-full p-4 bg-slate-50 rounded-xl outline-none">
+            <input type="text" id="numero" placeholder="Número" class="w-full p-4 bg-slate-50 rounded-xl outline-none border border-transparent focus:border-slate-200">
+
+            <div class="pt-4">
+                <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-4">Forma de Pagamento</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="relative cursor-pointer">
+                        <input type="radio" name="pagamento" value="PIX" class="peer sr-only" checked>
+                        <div class="p-4 border border-slate-100 rounded-xl bg-slate-50 text-center transition-all peer-checked:bg-black peer-checked:text-white peer-checked:border-black">
+                            <i class="bi bi-qr-code mb-1 block text-lg"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-widest">PIX</span>
+                        </div>
+                    </label>
+                    
+                    <label class="relative cursor-pointer">
+                        <input type="radio" name="pagamento" value="Cartão de Crédito" class="peer sr-only">
+                        <div class="p-4 border border-slate-100 rounded-xl bg-slate-50 text-center transition-all peer-checked:bg-black peer-checked:text-white peer-checked:border-black">
+                            <i class="bi bi-credit-card mb-1 block text-lg"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-widest">Cartão</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
         </form>
-       <button id="btn-finalizar" onclick="finalizarCompra(event)" class="w-full bg-black text-white py-5 rounded-2xl font-bold mt-6">FINALIZAR COMPRA</button>
+
+        <button id="btn-finalizar" onclick="finalizarCompra(event)" class="w-full bg-black text-white py-5 rounded-2xl font-bold mt-4 active:scale-95 transition-transform">
+            FINALIZAR COMPRA
+        </button>
     </section>
-    <footer class="mt-20 mb-10 text-center">
-    <p style="color: #000000; font-size: 11px; letter-spacing: 3px; font-weight: 300; text-transform: uppercase; margin: 0;">
-        © 2026 AOSCÉUS<a href="admin.html" style="color: rgba(255, 255, 255, 0.107); text-decoration: none; cursor: default;">.</a>
-    </p>
+
+    <footer class="mt-24 pb-20 bg-white">
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="w-full h-[1px] bg-slate-100 mb-12"></div>
+        
+        <div class="flex flex-col items-center justify-center">
+            <h2 class="text-[11px] font-bold tracking-[0.8em] text-slate-900 uppercase mb-3">
+                ÉDEN.WEAR
+            </h2>
+            
+            <p class="text-[9px] text-slate-500 uppercase tracking-[0.4em] font-medium">
+                © 2026<a href="admin.html" class="text-transparent cursor-default ml-1">.</a>
+            </p>
+        </div>
+    </div>
 </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="index.js"></script>
 </body>
