@@ -8,6 +8,7 @@ let cart = [];
 let produtoSelecionado = null; 
 let tamanhoSelecionado = null;
 let corSelecionada = null;
+let valorFreteAtual = 0;
 
 const tradutorCores = {
     "Preto": "#000000",
@@ -28,14 +29,11 @@ const anuncios = [
 ];
 
 let anuncioAtual = 0;
-
 function rotacionarAnuncios() {
     const elementoTexto = document.getElementById('texto-anuncio');
     if (!elementoTexto) return;
-
     elementoTexto.style.opacity = '0';
     elementoTexto.style.transform = 'translateY(5px)';
-
     setTimeout(() => {
         anuncioAtual = (anuncioAtual + 1) % anuncios.length;
         elementoTexto.innerText = anuncios[anuncioAtual];
@@ -43,7 +41,6 @@ function rotacionarAnuncios() {
         elementoTexto.style.transform = 'translateY(0px)';
     }, 700);
 }
-
 setInterval(rotacionarAnuncios, 5000);
 
 // --- CARREGAMENTO DE PRODUTOS ---
@@ -70,7 +67,7 @@ async function carregarProdutos() {
     `).join('');
 }
 
-// --- MODAL DE DETALHES (TAMANHO E COR) ---
+// --- MODAL DE DETALHES ---
 function abrirModalDetalhes(produto) {
     produtoSelecionado = produto;
     tamanhoSelecionado = null;
@@ -84,7 +81,7 @@ function abrirModalDetalhes(produto) {
             <div class="bg-white w-full max-w-md rounded-t-[3rem] sm:rounded-[3rem] p-8 shadow-2xl">
                 <div class="flex justify-between items-start mb-6">
                     <div class="flex gap-4">
-                        <img src="${produto.imagem_url}" class="w-16 h-20 object-cover rounded-xl shadow-sm">
+                        <img id="imagem-modal" src="${produto.imagem_url}" class="w-16 h-20 object-cover rounded-xl shadow-sm transition-all duration-500">
                         <div>
                             <h2 class="text-lg font-bold text-slate-900">${produto.nome}</h2>
                             <p class="text-slate-500 font-medium text-sm">R$ ${produto.preco.toFixed(2)}</p>
@@ -131,10 +128,40 @@ function abrirModalDetalhes(produto) {
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
+// --- SELEÇÃO DE COR COM TROCA DE IMAGEM (AJUSTADO) ---
 function selecionarCor(elemento, cor) {
     corSelecionada = cor;
-    document.querySelectorAll('.btn-cor').forEach(btn => btn.classList.remove('border-black', 'ring-2', 'ring-offset-2', 'ring-slate-400'));
+    
+    document.querySelectorAll('.btn-cor').forEach(btn => {
+        btn.classList.remove('border-black', 'ring-2', 'ring-offset-2', 'ring-slate-400');
+    });
     elemento.classList.add('border-black', 'ring-2', 'ring-offset-2', 'ring-slate-400');
+
+    const imgModal = document.getElementById('imagem-modal');
+    
+    if (imgModal && produtoSelecionado) {
+        // Normalização para evitar bugs com acentos ou espaços
+        const nomeFormatado = produtoSelecionado.nome.toLowerCase().trim()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/\s+/g, '-');
+        const corFormatada = cor.toLowerCase().trim().replace(/\s+/g, '-');
+        
+        const urlFinal = `${SB_URL}/storage/v1/object/public/produtos/${nomeFormatado}-${corFormatada}.png`;
+        
+        imgModal.style.opacity = '0.3';
+        const tempImg = new Image();
+        tempImg.src = urlFinal;
+        
+        tempImg.onload = () => {
+            imgModal.src = urlFinal;
+            imgModal.style.opacity = '1';
+        };
+        
+        tempImg.onerror = () => {
+            imgModal.src = produtoSelecionado.imagem_url;
+            imgModal.style.opacity = '1';
+        };
+    }
     validarSelecao();
 }
 
@@ -205,8 +232,9 @@ function updateCartUI() {
         }
     }
 
-    const total = cart.reduce((sum, item) => sum + item.price, 0);
-    if (totalDisplay) totalDisplay.innerText = `R$ ${total.toFixed(2)}`;
+    const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
+    if (totalDisplay) totalDisplay.innerText = `R$ ${subtotal.toFixed(2)}`;
+    atualizarPrecoFinal();
 }
 
 function removeFromCart(index) {
@@ -214,7 +242,51 @@ function removeFromCart(index) {
     updateCartUI();
 }
 
-// --- FINALIZAÇÃO E CEP ---
+// --- CÁLCULO DE FRETE E BOTÃO FINALIZAR ---
+function atualizarPrecoFinal() {
+    const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
+    const totalGeral = subtotal + valorFreteAtual;
+    const btn = document.getElementById('btn-finalizar');
+    if (btn) {
+        btn.innerHTML = `FINALIZAR COMPRA • R$ ${totalGeral.toFixed(2)}`;
+    }
+}
+
+async function buscaCEP(cep) {
+    const valor = cep.replace(/\D/g, '');
+    const secaoFrete = document.getElementById('secao-frete');
+    const labelFrete = document.getElementById('label-frete');
+    const valorFreteTxt = document.getElementById('valor-frete');
+    const detalheEntrega = document.getElementById('detalhe-entrega');
+
+    if (valor.length === 8) {
+        try {
+            const response = await fetch(`https://viacep.com.br/ws/${valor}/json/`);
+            const data = await response.json();
+            
+            if (!data.erro) {
+                document.getElementById('rua').value = `${data.logradouro}, ${data.bairro}`;
+                secaoFrete.classList.remove('hidden');
+
+                if (valor.startsWith('563') || valor.startsWith('489')) {
+                    valorFreteAtual = 10.00; 
+                    labelFrete.innerText = "Entrega Local (Motoboy)";
+                    detalheEntrega.innerText = "Petrolina/Juazeiro: Entrega em até 24h úteis.";
+                } else {
+                    valorFreteAtual = 35.00;
+                    labelFrete.innerText = "Envio Nacional";
+                    detalheEntrega.innerText = "Via Correios. Prazo de 5 a 10 dias úteis.";
+                }
+
+                valorFreteTxt.innerText = `R$ ${valorFreteAtual.toFixed(2)}`;
+                atualizarPrecoFinal();
+                document.getElementById('numero').focus();
+            }
+        } catch (e) { console.error("Erro CEP"); }
+    }
+}
+
+// --- FINALIZAÇÃO ---
 async function finalizarCompra(event) {
     if (event) event.preventDefault();
 
@@ -228,47 +300,41 @@ async function finalizarCompra(event) {
     if (!nome || !numero || !cep) return alert("Preencha todos os dados de entrega.");
     if (btn) { btn.innerText = "PROCESSANDO..."; btn.disabled = true; }
 
-    const total = cart.reduce((sum, item) => sum + item.price, 0);
+    const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
+    const totalFinal = subtotal + valorFreteAtual;
 
     const { error } = await supabaseClient.from('pedidos').insert([{
-        nome, cep, rua, numero, total, pagamento, itens_json: cart 
+        nome, cep, rua, numero, total: totalFinal, pagamento, itens_json: cart 
     }]);
 
     if (error) {
         alert("Erro ao salvar: " + error.message);
         if (btn) { btn.innerText = "FINALIZAR COMPRA"; btn.disabled = false; }
     } else {
+        if (typeof confetti === 'function') {
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#000000', '#ffffff'] });
+        }
+
         let texto = `*NOVO PEDIDO - ÉDEN.WEAR*\n\n`;
         texto += `*Cliente:* ${nome}\n`;
         texto += `*Endereço:* ${rua}, nº ${numero}\n`;
         texto += `*Pagamento:* ${pagamento}\n\n`;
         texto += `*ITENS:*\n`;
         cart.forEach(item => { texto += `- ${item.name} (${item.color} | ${item.size})\n`; });
-        texto += `\n*TOTAL: R$ ${total.toFixed(2)}*`;
+        texto += `\n*Subtotal:* R$ ${subtotal.toFixed(2)}`;
+        texto += `\n*Frete:* R$ ${valorFreteAtual.toFixed(2)}`;
+        texto += `\n*TOTAL: R$ ${totalFinal.toFixed(2)}*`;
         
-        window.location.href = `https://wa.me/5587988501105?text=${encodeURIComponent(texto)}`;
-        
-        cart = []; 
-        updateCartUI(); 
-        document.getElementById('order-form').reset();
-        showView('shop-view');
-        if (btn) { btn.innerText = "FINALIZAR COMPRA"; btn.disabled = false; }
+        setTimeout(() => {
+            window.location.href = `https://wa.me/5587988501105?text=${encodeURIComponent(texto)}`;
+            cart = []; updateCartUI(); 
+            document.getElementById('order-form').reset();
+            showView('shop-view');
+            if (btn) { btn.innerText = "FINALIZAR COMPRA"; btn.disabled = false; }
+        }, 1500);
     }
 }
 
-async function buscaCEP(cep) {
-    const valor = cep.replace(/\D/g, '');
-    if (valor.length === 8) {
-        const response = await fetch(`https://viacep.com.br/ws/${valor}/json/`);
-        const data = await response.json();
-        if (!data.erro) {
-            document.getElementById('rua').value = `${data.logradouro}, ${data.bairro}`;
-            document.getElementById('numero').focus();
-        }
-    }
-}
-
-// --- NAVEGAÇÃO ---
 function showView(viewId) {
     document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
     document.getElementById(viewId).classList.remove('hidden');
@@ -280,5 +346,4 @@ function checkout() {
     showView('checkout-view');
 }
 
-// INICIALIZAÇÃO
 carregarProdutos();

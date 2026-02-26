@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .view-section { transition: all 0.3s ease; }
@@ -39,7 +40,7 @@
 
     <main id="shop-view" class="view-section px-6">
         <div class="mb-10">
-            <h1 class="text-3xl font-light leading-tight">Coleção<br><span class="font-semibold italic">Dinâmica '26</span></h1>
+            <h1 class="text-3xl font-light leading-tight">Coleção de<br><span class="font-semibold italic">Blusas '26</span></h1>
         </div>
 
         <div id="grid-produtos" class="grid grid-cols-2 gap-x-4 gap-y-10">
@@ -69,6 +70,15 @@
         </div>
         
         <form id="order-form" class="space-y-5 flex-1 overflow-y-auto no-scrollbar pb-10">
+            
+            <div id="secao-frete" class="hidden mb-8 p-5 rounded-[2rem] border border-slate-100 bg-slate-50/50">
+                <div class="flex justify-between items-center mb-1">
+                    <span id="label-frete" class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Cálculo de Frete</span>
+                    <span id="valor-frete" class="text-xs font-bold text-slate-900 italic">R$ 0,00</span>
+                </div>
+                <p id="detalhe-entrega" class="text-[10px] text-slate-400 italic leading-tight"></p>
+            </div>
+
             <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-2">Dados de Entrega</p>
             <input type="text" id="nome" placeholder="Nome Completo" class="w-full p-4 bg-slate-50 rounded-xl outline-none border border-transparent focus:border-slate-200">
             <input type="text" id="cep" placeholder="CEP" oninput="buscaCEP(this.value)" class="w-full p-4 bg-slate-50 rounded-xl outline-none border border-transparent focus:border-slate-200">
@@ -97,7 +107,7 @@
             </div>
         </form>
 
-        <button id="btn-finalizar" onclick="finalizarCompra(event)" class="w-full bg-black text-white py-5 rounded-2xl font-bold mt-4 active:scale-95 transition-transform">
+        <button id="btn-finalizar" onclick="finalizarCompra(event)" class="w-full bg-black text-white py-5 rounded-2xl font-bold mt-4 active:scale-95 transition-transform flex justify-center items-center gap-2">
             FINALIZAR COMPRA
         </button>
     </section>
