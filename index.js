@@ -9,6 +9,7 @@ let produtoSelecionado = null;
 let tamanhoSelecionado = null;
 let corSelecionada = null;
 let valorFreteAtual = 0;
+let cidadeAtual = ""; // Armazena a cidade identificada pelo CEP
 
 const tradutorCores = {
     "Preto": "#000000",
@@ -235,6 +236,7 @@ function atualizarPrecoFinal() {
     if (btn) btn.innerHTML = `FINALIZAR COMPRA • R$ ${totalGeral.toFixed(2)}`;
 }
 
+// --- BUSCA CEP COM IDENTIFICAÇÃO DE CIDADE ---
 async function buscaCEP(cep) {
     const valor = cep.replace(/\D/g, '');
     const secaoFrete = document.getElementById('secao-frete');
@@ -246,10 +248,16 @@ async function buscaCEP(cep) {
             const response = await fetch(`https://viacep.com.br/ws/${valor}/json/`);
             const data = await response.json();
             if (!data.erro) {
+                // Guarda Cidade e Estado
+                cidadeAtual = `${data.localidade} - ${data.uf}`;
+                
                 document.getElementById('rua').value = `${data.logradouro}, ${data.bairro}`;
                 secaoFrete.classList.remove('hidden');
+                
+                // Lógica Petrolina (563xx) e Juazeiro (489xx)
                 valorFreteAtual = (valor.startsWith('563') || valor.startsWith('489')) ? 10.00 : 35.00;
                 labelFrete.innerText = valorFreteAtual === 10 ? "Entrega Local" : "Envio Nacional";
+                
                 valorFreteTxt.innerText = `R$ ${valorFreteAtual.toFixed(2)}`;
                 atualizarPrecoFinal();
                 document.getElementById('numero').focus();
@@ -258,7 +266,7 @@ async function buscaCEP(cep) {
     }
 }
 
-// --- FINALIZAÇÃO ---
+// --- FINALIZAÇÃO COM MENSAGEM COMPLETA ---
 async function finalizarCompra(event) {
     if (event) event.preventDefault();
     const btn = document.getElementById('btn-finalizar');
@@ -267,6 +275,7 @@ async function finalizarCompra(event) {
     const rua = document.getElementById('rua').value;
     const numero = document.getElementById('numero').value;
     const pagamento = document.querySelector('input[name="pagamento"]:checked').value;
+    const tipoFrete = document.getElementById('label-frete').innerText;
 
     if (!nome || !numero || !cep) return alert("Preencha todos os dados.");
     if (btn) { btn.innerText = "PROCESSANDO..."; btn.disabled = true; }
@@ -282,14 +291,32 @@ async function finalizarCompra(event) {
         alert("Erro: " + error.message);
         if (btn) { btn.innerText = "FINALIZAR COMPRA"; btn.disabled = false; }
     } else {
+        // MONTAGEM DA MENSAGEM WHATSAPP
         let texto = `*NOVO PEDIDO - ÉDEN.WEAR*\n\n`;
-        texto += `*Cliente:* ${nome}\n*Endereço:* ${rua}, nº ${numero}\n*Pagamento:* ${pagamento}\n\n*ITENS:*\n`;
-        cart.forEach(item => { texto += `- ${item.name} (${item.color} | ${item.size})\n`; });
+        texto += `*CLIENTE:* ${nome}\n`;
+        texto += `*CIDADE:* ${cidadeAtual}\n`;
+        texto += `*ENDEREÇO:* ${rua}, nº ${numero}\n`;
+        texto += `*CEP:* ${cep}\n\n`;
+        
+        texto += `*ITENS:*\n`;
+        cart.forEach(item => { 
+            texto += `- ${item.name} (${item.color} | ${item.size})\n`; 
+        });
+        
+        texto += `\n*RESUMO:*`;
+        texto += `\nSubtotal: R$ ${subtotal.toFixed(2)}`;
+        texto += `\nFrete (${tipoFrete}): R$ ${valorFreteAtual.toFixed(2)}`;
         texto += `\n*TOTAL: R$ ${totalFinal.toFixed(2)}*`;
         
+        texto += `\n\n*PAGAMENTO:* ${pagamento}`;
+        
         window.location.href = `https://wa.me/5587988501105?text=${encodeURIComponent(texto)}`;
-        cart = []; updateCartUI(); 
+        
+        // Limpeza pós-pedido
+        cart = []; 
+        updateCartUI(); 
         document.getElementById('order-form').reset();
+        document.getElementById('secao-frete').classList.add('hidden');
         showView('shop-view');
     }
 }
