@@ -6,15 +6,33 @@
     <title>Éden | Store</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .view-section { transition: all 0.3s ease; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Ajuste para animação suave da barra */
         #texto-anuncio { transition: all 0.7s ease-in-out; }
+
+        /* Estilo para os botões de pagamento minimalistas */
+        .payment-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        input[type="radio"]:checked + .payment-card {
+            background-color: #000 !important;
+            color: #fff !important;
+            border-color: #000 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        /* Estilo para itens da sacola */
+        .cart-item {
+            border-bottom: 1px solid #f8fafc;
+            padding-bottom: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
     </style>
 </head>
 <body class="bg-white text-slate-900">
@@ -49,64 +67,81 @@
 
     <section id="cart-view" class="view-section hidden fixed inset-0 bg-white z-[160] flex flex-col px-6 py-8">
         <div class="flex justify-between items-end mb-10">
-            <h2 class="text-3xl font-semibold">Sua Sacola</h2>
+            <h2 class="text-3xl font-semibold italic">Sua Sacola</h2>
             <button onclick="showView('shop-view')"><i class="bi bi-x-lg text-2xl"></i></button>
         </div>
-        <div id="cart-items-list" class="flex-1 overflow-y-auto space-y-8 no-scrollbar"></div>
-        <div class="pt-6 border-t border-slate-100">
-            <div class="flex justify-between items-center mb-6">
-                <span class="text-slate-400">Total</span>
-                <span id="cart-total-value" class="text-2xl font-bold">R$ 0,00</span>
+        
+        <div id="cart-items-list" class="flex-1 overflow-y-auto no-scrollbar">
             </div>
-            <button onclick="checkout()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-semibold active:scale-95 transition-transform">FECHAR PEDIDO</button>
+
+        <div class="pt-6 border-t border-slate-100">
+            <div class="mb-6 px-1">
+                <div id="cupom-container" class="flex gap-2">
+                    <input type="text" id="input-cupom" placeholder="CUPOM DE DESCONTO" 
+                        class="flex-1 bg-slate-50 p-4 rounded-2xl text-[10px] font-bold tracking-widest outline-none border border-transparent focus:border-slate-200 uppercase transition-all">
+                    <button onclick="aplicarCupom()" class="bg-slate-900 text-white px-6 rounded-2xl text-[10px] font-bold uppercase tracking-widest active:scale-95 transition-all">
+                        Aplicar
+                    </button>
+                </div>
+                <div id="cupom-feedback" class="hidden mt-3 flex justify-between items-center text-[10px] font-bold uppercase tracking-widest px-2 py-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                    <span id="texto-cupom-aplicado">Cupom Ativo</span>
+                    <button onclick="removerCupom()" class="text-emerald-800 underline">Remover</button>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center mb-6 px-1">
+                <span class="text-slate-400 font-medium">Subtotal</span>
+                <span id="cart-total-value" class="text-2xl font-bold italic">R$ 0,00</span>
+            </div>
+            <button onclick="checkout()" class="w-full bg-black text-white py-5 rounded-2xl font-bold tracking-widest active:scale-95 transition-transform">FECHAR PEDIDO</button>
         </div>
     </section>
 
     <section id="checkout-view" class="view-section hidden fixed inset-0 bg-white z-[170] flex flex-col px-6 py-8">
         <div class="flex items-center gap-4 mb-10">
             <button onclick="showView('cart-view')"><i class="bi bi-arrow-left text-2xl"></i></button>
-            <h2 class="text-2xl font-semibold">Finalizar</h2>
+            <h2 class="text-2xl font-semibold italic">Finalizar</h2>
         </div>
         
         <form id="order-form" class="space-y-5 flex-1 overflow-y-auto no-scrollbar pb-10">
             
-            <div id="secao-frete" class="hidden mb-8 p-5 rounded-[2rem] border border-slate-100 bg-slate-50/50">
+            <div id="secao-frete" class="hidden mb-8 p-6 rounded-[2rem] border border-slate-100 bg-slate-50/50 transition-all">
                 <div class="flex justify-between items-center mb-1">
-                    <span id="label-frete" class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Cálculo de Frete</span>
-                    <span id="valor-frete" class="text-xs font-bold text-slate-900 italic">R$ 0,00</span>
+                    <span id="label-frete" class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Entrega</span>
+                    <span id="valor-frete" class="text-sm font-bold text-slate-900 italic">R$ 0,00</span>
                 </div>
                 <p id="detalhe-entrega" class="text-[10px] text-slate-400 italic leading-tight"></p>
             </div>
 
-            <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-2">Dados de Entrega</p>
-            <input type="text" id="nome" placeholder="Nome Completo" class="w-full p-4 bg-slate-50 rounded-xl outline-none border border-transparent focus:border-slate-200">
-            <input type="text" id="cep" placeholder="CEP" oninput="buscaCEP(this.value)" class="w-full p-4 bg-slate-50 rounded-xl outline-none border border-transparent focus:border-slate-200">
-            <input type="text" id="rua" placeholder="Endereço" readonly class="w-full p-4 bg-slate-100 text-slate-500 rounded-xl">
-            <input type="text" id="numero" placeholder="Número" class="w-full p-4 bg-slate-50 rounded-xl outline-none border border-transparent focus:border-slate-200">
+            <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-2 ml-1">Dados de Entrega</p>
+            <input type="text" id="nome" placeholder="Nome Completo" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-transparent focus:border-slate-200 transition-all">
+            <input type="text" id="cep" placeholder="CEP" oninput="buscaCEP(this.value)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-transparent focus:border-slate-200 transition-all">
+            <input type="text" id="rua" placeholder="Endereço" readonly class="w-full p-4 bg-slate-100 text-slate-500 rounded-2xl cursor-not-allowed">
+            <input type="text" id="numero" placeholder="Número" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-transparent focus:border-slate-200 transition-all">
 
             <div class="pt-4">
-                <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-4">Forma de Pagamento</p>
+                <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-4 ml-1">Forma de Pagamento</p>
                 <div class="grid grid-cols-2 gap-3">
                     <label class="relative cursor-pointer">
                         <input type="radio" name="pagamento" value="PIX" class="peer sr-only" checked>
-                        <div class="p-4 border border-slate-100 rounded-xl bg-slate-50 text-center transition-all peer-checked:bg-black peer-checked:text-white peer-checked:border-black">
-                            <i class="bi bi-qr-code mb-1 block text-lg"></i>
-                            <span class="text-[10px] font-bold uppercase tracking-widest">PIX</span>
+                        <div class="payment-card p-5 rounded-2xl bg-slate-50 text-center border border-transparent">
+                            <i class="bi bi-qr-code mb-2 block text-xl"></i>
+                            <span class="text-[11px] font-bold uppercase tracking-widest">PIX</span>
                         </div>
                     </label>
                     
                     <label class="relative cursor-pointer">
                         <input type="radio" name="pagamento" value="Cartão de Crédito" class="peer sr-only">
-                        <div class="p-4 border border-slate-100 rounded-xl bg-slate-50 text-center transition-all peer-checked:bg-black peer-checked:text-white peer-checked:border-black">
-                            <i class="bi bi-credit-card mb-1 block text-lg"></i>
-                            <span class="text-[10px] font-bold uppercase tracking-widest">Cartão</span>
+                        <div class="payment-card p-5 rounded-2xl bg-slate-50 text-center border border-transparent">
+                            <i class="bi bi-credit-card mb-2 block text-xl"></i>
+                            <span class="text-[11px] font-bold uppercase tracking-widest">Cartão</span>
                         </div>
                     </label>
                 </div>
             </div>
         </form>
 
-        <button id="btn-finalizar" onclick="finalizarCompra(event)" class="w-full bg-black text-white py-5 rounded-2xl font-bold mt-4 active:scale-95 transition-transform flex justify-center items-center gap-2">
+        <button id="btn-finalizar" onclick="finalizarCompra(event)" class="w-full bg-black text-white py-5 rounded-2xl font-bold mt-4 active:scale-95 transition-transform flex justify-center items-center gap-2 tracking-widest">
             FINALIZAR COMPRA
         </button>
     </section>
@@ -114,13 +149,12 @@
     <footer class="mt-24 pb-20 bg-white">
         <div class="max-w-6xl mx-auto px-6">
             <div class="w-full h-[1px] bg-slate-100 mb-12"></div>
-            
-            <div class="flex flex-col items-center justify-center">
+            <div class="flex flex-col items-center justify-center text-center">
                 <h2 class="text-[11px] font-bold tracking-[0.8em] text-slate-900 uppercase mb-3">
                     ÉDEN.WEAR
                 </h2>
-                <p class="text-[9px] text-slate-500 uppercase tracking-[0.4em] font-medium">
-                    © 2026<a href="admin.html" class="text-transparent cursor-default ml-1">.</a>
+                <p class="text-[9px] text-slate-400 uppercase tracking-[0.4em] font-medium">
+                    © 2026
                 </p>
             </div>
         </div>

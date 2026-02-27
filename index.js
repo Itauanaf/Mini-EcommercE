@@ -9,16 +9,21 @@ let produtoSelecionado = null;
 let tamanhoSelecionado = null;
 let corSelecionada = null;
 let valorFreteAtual = 0;
-let cidadeAtual = ""; // Armazena a cidade identificada pelo CEP
+let cidadeAtual = ""; 
+
+// VARIÁVEIS DE CUPOM
+let descontoAtivo = 0; 
+let nomeCupomAtivo = "";
+
+const CUPONS_VALIDOS = {
+    "EDEN10": 0.10,        
+    "PRIMEIRACOMPRA": 0.15, 
+    "OFF20": 20.00         
+};
 
 const tradutorCores = {
-    "Preto": "#000000",
-    "Branco": "#FFFFFF",
-    "Off-White": "#F8F8F2", 
-    "Marrom": "#5D4037",
-    "Marinho": "#001F3F",
-    "Areia": "#C2B280",
-    "Aria": "#D2D2D2"
+    "Preto": "#000000", "Branco": "#FFFFFF", "Off-White": "#F8F8F2", 
+    "Marrom": "#5D4037", "Marinho": "#001F3F", "Areia": "#C2B280", "Aria": "#D2D2D2"
 };
 
 // --- LÓGICA DA BARRA DE ANÚNCIOS ---
@@ -44,7 +49,7 @@ function rotacionarAnuncios() {
 }
 setInterval(rotacionarAnuncios, 5000);
 
-// --- CARREGAMENTO DE PRODUTOS ---
+// --- CARREGAMENTO DE PRODUTOS (AJUSTADO) ---
 async function carregarProdutos() {
     const { data: produtos, error } = await supabaseClient
         .from('produtos')
@@ -52,20 +57,33 @@ async function carregarProdutos() {
         .order('created_at', { ascending: false });
 
     const grid = document.getElementById('grid-produtos');
-    if (error || !grid) return;
+    
+    if (error) {
+        console.error("ERRO DETALHADO DO SUPABASE:", error.message, error.details, error.hint);
+        return;
+    }
 
-    grid.innerHTML = produtos.map(p => `
-        <div onclick="abrirModalDetalhes(${JSON.stringify(p).replace(/"/g, '&quot;')})" 
-             class="flex flex-col h-full group cursor-pointer bg-white rounded-[2.5rem] p-2 transition-all duration-300 active:scale-95">
-            <div class="relative overflow-hidden aspect-[3/4] rounded-[2.2rem] bg-slate-50 mb-4">
-                <img src="${p.imagem_url}" class="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105">
+    if (!produtos || produtos.length === 0) {
+        console.warn("A conexão funcionou, mas a tabela 'produtos' está vazia.");
+        grid.innerHTML = "<p class='text-center w-full opacity-50 italic'>Nenhum produto cadastrado no banco.</p>";
+        return;
+    }
+
+    // ... restante do código de mapeamento (pode manter o anterior)
+    grid.innerHTML = produtos.map(p => {
+        const produtoJSON = JSON.stringify(p).replace(/'/g, "\\'");
+        return `
+            <div onclick='abrirModalDetalhes(${produtoJSON})' class="flex flex-col h-full group cursor-pointer bg-white rounded-[2.5rem] p-2 transition-all duration-300 active:scale-95">
+                <div class="relative overflow-hidden aspect-[3/4] rounded-[2.2rem] bg-slate-50 mb-4">
+                    <img src="${p.imagem_url}" class="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105">
+                </div>
+                <div class="px-3 pb-3">
+                    <h3 class="text-[14px] font-light text-slate-700 tracking-tight leading-tight mb-1">${p.nome}</h3>
+                    <p class="text-[16px] font-semibold text-slate-900">R$ ${p.preco.toFixed(2)}</p>
+                </div>
             </div>
-            <div class="px-3 pb-3">
-                <h3 class="text-[14px] font-light text-slate-700 tracking-tight leading-tight mb-1">${p.nome}</h3>
-                <p class="text-[16px] font-semibold text-slate-900">R$ ${p.preco.toFixed(2)}</p>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // --- MODAL DE DETALHES ---
@@ -129,7 +147,7 @@ function abrirModalDetalhes(produto) {
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
-// --- SELEÇÃO DE COR COM TROCA DE IMAGEM ---
+// TROCA DE IMAGEM AO SELECIONAR COR
 function selecionarCor(elemento, cor) {
     corSelecionada = cor;
     document.querySelectorAll('.btn-cor').forEach(btn => btn.classList.remove('border-black', 'ring-2', 'ring-offset-2', 'ring-slate-400'));
@@ -137,17 +155,17 @@ function selecionarCor(elemento, cor) {
 
     const imgModal = document.getElementById('imagem-modal');
     if (imgModal && produtoSelecionado) {
-        const nomeFormatado = produtoSelecionado.nome.toLowerCase().trim()
-            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-            .replace(/\s+/g, '-');
-        const corFormatada = cor.toLowerCase().trim().replace(/\s+/g, '-');
-        const urlFinal = `${SB_URL}/storage/v1/object/public/produtos/${nomeFormatado}-${corFormatada}.png`;
+        const format = (text) => text.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
+        const nomeF = format(produtoSelecionado.nome);
+        const corF = format(cor);
+        const urlVariacao = `${SB_URL}/storage/v1/object/public/produtos/${nomeF}-${corF}.png`;
         
+        const testeImg = new Image();
+        testeImg.src = urlVariacao;
         imgModal.style.opacity = '0.3';
-        const tempImg = new Image();
-        tempImg.src = urlFinal;
-        tempImg.onload = () => { imgModal.src = urlFinal; imgModal.style.opacity = '1'; };
-        tempImg.onerror = () => { imgModal.src = produtoSelecionado.imagem_url; imgModal.style.opacity = '1'; };
+        
+        testeImg.onload = () => { imgModal.src = urlVariacao; imgModal.style.opacity = '1'; };
+        testeImg.onerror = () => { imgModal.src = produtoSelecionado.imagem_url; imgModal.style.opacity = '1'; };
     }
     validarSelecao();
 }
@@ -174,22 +192,45 @@ function validarSelecao() {
 
 function confirmarAdicao() {
     if (produtoSelecionado && tamanhoSelecionado && corSelecionada) {
-        addToCart(produtoSelecionado.nome, produtoSelecionado.preco, tamanhoSelecionado, corSelecionada);
+        cart.push({ name: produtoSelecionado.nome, price: produtoSelecionado.preco, size: tamanhoSelecionado, color: corSelecionada });
+        updateCartUI();
         fecharModal(); 
     }
 }
 
-function fecharModal() {
-    const modal = document.getElementById('modal-tamanho');
-    if (modal) modal.remove();
+function fecharModal() { document.getElementById('modal-tamanho')?.remove(); }
+
+// --- LÓGICA DE CUPOM ---
+function aplicarCupom() {
+    const input = document.getElementById('input-cupom');
+    const codigo = input.value.toUpperCase().trim();
+    const feedback = document.getElementById('cupom-feedback');
+    const container = document.getElementById('cupom-container');
+    const textoFeedback = document.getElementById('texto-cupom-aplicado');
+
+    if (CUPONS_VALIDOS[codigo]) {
+        nomeCupomAtivo = codigo;
+        descontoAtivo = CUPONS_VALIDOS[codigo];
+        container.classList.add('hidden');
+        feedback.classList.remove('hidden');
+        textoFeedback.innerText = `CUPOM ${codigo} APLICADO`;
+        updateCartUI();
+    } else {
+        alert("Cupom inválido.");
+        input.value = "";
+    }
 }
 
-// --- GESTÃO DA SACOLA ---
-function addToCart(name, price, size, color) {
-    cart.push({ name, price, size, color });
+function removerCupom() {
+    descontoAtivo = 0;
+    nomeCupomAtivo = "";
+    document.getElementById('cupom-container').classList.remove('hidden');
+    document.getElementById('cupom-feedback').classList.add('hidden');
+    document.getElementById('input-cupom').value = "";
     updateCartUI();
 }
 
+// --- GESTÃO DA SACOLA ---
 function updateCartUI() {
     const list = document.getElementById('cart-items-list');
     const badge = document.getElementById('cart-count');
@@ -202,25 +243,30 @@ function updateCartUI() {
 
     if (list) {
         if (cart.length === 0) {
-            list.innerHTML = `<p class="text-center opacity-30 mt-10 text-sm italic">Sua sacola está vazia</p>`;
+            list.innerHTML = `<div class="flex flex-col items-center justify-center h-40 opacity-20"><i class="bi bi-bag-x text-4xl mb-2"></i><p class="text-sm italic">Sua sacola está vazia</p></div>`;
         } else {
             list.innerHTML = cart.map((item, i) => `
-                <div class="flex items-center gap-4 border-b border-slate-50 pb-4">
+                <div class="flex items-center gap-4 cart-item">
                     <div class="flex-1">
-                        <h4 class="font-medium text-[13px] text-slate-800">${item.name}</h4>
-                        <p class="text-slate-400 text-[11px] uppercase tracking-wider">${item.color} / ${item.size}</p>
-                        <p class="font-bold text-slate-900 text-sm">R$ ${item.price.toFixed(2)}</p>
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-semibold text-[14px] text-slate-900 tracking-tight">${item.name}</h4>
+                            <button onclick="removeFromCart(${i})" class="text-slate-300 hover:text-black transition-colors">
+                                <i class="bi bi-x-lg text-sm"></i>
+                            </button>
+                        </div>
+                        <p class="text-slate-400 text-[10px] uppercase tracking-[0.2em] mt-1">${item.color} — TAMANHO ${item.size}</p>
+                        <p class="font-bold text-slate-900 text-sm mt-2 italic">R$ ${item.price.toFixed(2)}</p>
                     </div>
-                    <button onclick="removeFromCart(${i})" class="text-slate-300 hover:text-red-500 transition-colors p-2">
-                        <i class="bi bi-trash3"></i>
-                    </button>
                 </div>
             `).join('');
         }
     }
 
     const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
-    if (totalDisplay) totalDisplay.innerText = `R$ ${subtotal.toFixed(2)}`;
+    const valorDesconto = (descontoAtivo < 1) ? (subtotal * descontoAtivo) : descontoAtivo;
+    const subtotalComDesconto = Math.max(0, subtotal - valorDesconto);
+    
+    if (totalDisplay) totalDisplay.innerText = `R$ ${subtotalComDesconto.toFixed(2)}`;
     atualizarPrecoFinal();
 }
 
@@ -231,34 +277,26 @@ function removeFromCart(index) {
 
 function atualizarPrecoFinal() {
     const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
-    const totalGeral = subtotal + valorFreteAtual;
+    const valorDesconto = (descontoAtivo < 1) ? (subtotal * descontoAtivo) : descontoAtivo;
+    const totalGeral = Math.max(0, subtotal - valorDesconto) + valorFreteAtual;
     const btn = document.getElementById('btn-finalizar');
     if (btn) btn.innerHTML = `FINALIZAR COMPRA • R$ ${totalGeral.toFixed(2)}`;
 }
 
-// --- BUSCA CEP COM IDENTIFICAÇÃO DE CIDADE ---
+// --- BUSCA CEP ---
 async function buscaCEP(cep) {
     const valor = cep.replace(/\D/g, '');
-    const secaoFrete = document.getElementById('secao-frete');
-    const labelFrete = document.getElementById('label-frete');
-    const valorFreteTxt = document.getElementById('valor-frete');
-
     if (valor.length === 8) {
         try {
             const response = await fetch(`https://viacep.com.br/ws/${valor}/json/`);
             const data = await response.json();
             if (!data.erro) {
-                // Guarda Cidade e Estado
                 cidadeAtual = `${data.localidade} - ${data.uf}`;
-                
                 document.getElementById('rua').value = `${data.logradouro}, ${data.bairro}`;
-                secaoFrete.classList.remove('hidden');
-                
-                // Lógica Petrolina (563xx) e Juazeiro (489xx)
+                document.getElementById('secao-frete').classList.remove('hidden');
                 valorFreteAtual = (valor.startsWith('563') || valor.startsWith('489')) ? 10.00 : 35.00;
-                labelFrete.innerText = valorFreteAtual === 10 ? "Entrega Local" : "Envio Nacional";
-                
-                valorFreteTxt.innerText = `R$ ${valorFreteAtual.toFixed(2)}`;
+                document.getElementById('label-frete').innerText = valorFreteAtual === 10 ? "Entrega Local" : "Envio Nacional";
+                document.getElementById('valor-frete').innerText = `R$ ${valorFreteAtual.toFixed(2)}`;
                 atualizarPrecoFinal();
                 document.getElementById('numero').focus();
             }
@@ -266,7 +304,7 @@ async function buscaCEP(cep) {
     }
 }
 
-// --- FINALIZAÇÃO COM MENSAGEM COMPLETA ---
+// --- FINALIZAÇÃO ---
 async function finalizarCompra(event) {
     if (event) event.preventDefault();
     const btn = document.getElementById('btn-finalizar');
@@ -275,48 +313,34 @@ async function finalizarCompra(event) {
     const rua = document.getElementById('rua').value;
     const numero = document.getElementById('numero').value;
     const pagamento = document.querySelector('input[name="pagamento"]:checked').value;
-    const tipoFrete = document.getElementById('label-frete').innerText;
 
     if (!nome || !numero || !cep) return alert("Preencha todos os dados.");
     if (btn) { btn.innerText = "PROCESSANDO..."; btn.disabled = true; }
 
     const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
-    const totalFinal = subtotal + valorFreteAtual;
+    const valorDesconto = (descontoAtivo < 1) ? (subtotal * descontoAtivo) : descontoAtivo;
+    const totalFinal = Math.max(0, subtotal - valorDesconto) + valorFreteAtual;
 
     const { error } = await supabaseClient.from('pedidos').insert([{
         nome, cep, rua, numero, total: totalFinal, pagamento, itens_json: cart 
     }]);
 
     if (error) {
-        alert("Erro: " + error.message);
+        alert("Erro ao salvar: " + error.message);
         if (btn) { btn.innerText = "FINALIZAR COMPRA"; btn.disabled = false; }
     } else {
-        // MONTAGEM DA MENSAGEM WHATSAPP
         let texto = `*NOVO PEDIDO - ÉDEN.WEAR*\n\n`;
-        texto += `*CLIENTE:* ${nome}\n`;
-        texto += `*CIDADE:* ${cidadeAtual}\n`;
-        texto += `*ENDEREÇO:* ${rua}, nº ${numero}\n`;
-        texto += `*CEP:* ${cep}\n\n`;
+        texto += `*CLIENTE:* ${nome}\n*CIDADE:* ${cidadeAtual}\n*ENDEREÇO:* ${rua}, nº ${numero}\n\n*ITENS:*\n`;
+        cart.forEach(i => { texto += `- ${i.name} (${i.color}/${i.size})\n`; });
         
-        texto += `*ITENS:*\n`;
-        cart.forEach(item => { 
-            texto += `- ${item.name} (${item.color} | ${item.size})\n`; 
-        });
-        
-        texto += `\n*RESUMO:*`;
-        texto += `\nSubtotal: R$ ${subtotal.toFixed(2)}`;
-        texto += `\nFrete (${tipoFrete}): R$ ${valorFreteAtual.toFixed(2)}`;
-        texto += `\n*TOTAL: R$ ${totalFinal.toFixed(2)}*`;
-        
-        texto += `\n\n*PAGAMENTO:* ${pagamento}`;
+        if (descontoAtivo > 0) texto += `\n*CUPOM:* ${nomeCupomAtivo} (-R$ ${valorDesconto.toFixed(2)})`;
+        texto += `\n*TOTAL: R$ ${totalFinal.toFixed(2)}*\n*PAGAMENTO:* ${pagamento}`;
         
         window.location.href = `https://wa.me/5587988501105?text=${encodeURIComponent(texto)}`;
         
-        // Limpeza pós-pedido
-        cart = []; 
-        updateCartUI(); 
+        cart = []; updateCartUI();
         document.getElementById('order-form').reset();
-        document.getElementById('secao-frete').classList.add('hidden');
+        removerCupom();
         showView('shop-view');
     }
 }
@@ -332,4 +356,5 @@ function checkout() {
     showView('checkout-view');
 }
 
+// INICIALIZAÇÃO
 carregarProdutos();
