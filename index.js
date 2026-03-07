@@ -158,26 +158,40 @@ function abrirModalDetalhes(produto) {
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
-function selecionarCor(elemento, cor) {
+function selecionarCor(el, cor) {
     corSelecionada = cor;
-    document.querySelectorAll('.btn-cor').forEach(btn => btn.classList.remove('border-black', 'ring-2', 'ring-offset-2', 'ring-slate-400'));
-    elemento.classList.add('border-black', 'ring-2', 'ring-offset-2', 'ring-slate-400');
+    
+    // UI: Destacar botão selecionado
+    document.querySelectorAll('.btn-cor').forEach(b => b.classList.remove('ring-2', 'ring-black', 'ring-offset-2'));
+    el.classList.add('ring-2', 'ring-black', 'ring-offset-2');
 
     const imgModal = document.getElementById('imagem-modal');
     if (imgModal && produtoSelecionado) {
-        const format = (text) => text.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
-        const nomeF = format(produtoSelecionado.nome);
-        const corF = format(cor);
-        const urlVariacao = `${SB_URL}/storage/v1/object/public/produtos/${nomeF}-${corF}.png`;
+        // 1. Limpa o link principal de qualquer espaço ou parâmetro
+        let linkOriginal = produtoSelecionado.imagem_url.trim().split('?')[0];
         
-        const testeImg = new Image();
-        testeImg.src = urlVariacao;
-        imgModal.style.opacity = '0.3';
+        // 2. Define a primeira cor padrão
+        const primeiraCor = produtoSelecionado.cores.split(',')[0].trim().toLowerCase();
         
-        testeImg.onload = () => { imgModal.src = urlVariacao; imgModal.style.opacity = '1'; };
-        testeImg.onerror = () => { imgModal.src = produtoSelecionado.imagem_url; imgModal.style.opacity = '1'; };
+        if (cor.toLowerCase().trim() === primeiraCor) {
+            imgModal.src = linkOriginal;
+        } else {
+            // 3. Monta o link da variação de cor
+            const pontoIndice = linkOriginal.lastIndexOf('.');
+            const baseLink = linkOriginal.substring(0, pontoIndice);
+            const extensao = linkOriginal.substring(pontoIndice);
+            
+            // 4. LIMPEZA TOTAL: transforma "Preto" em "preto", remove acentos e espaços
+            const sufixo = cor.toLowerCase().trim()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove acentos como o "Á"
+                .replace(/\s+/g, '-'); // Troca espaços por hífens
+            
+            const novoLink = `${baseLink}-${sufixo}${extensao}`;
+            
+            console.log("Tentando carregar cor selecionada:", novoLink);
+            imgModal.src = novoLink;
+        }
     }
-    validarSelecao();
 }
 
 function selecionarTamanho(elemento, tamanho) {
