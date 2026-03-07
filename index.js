@@ -239,7 +239,7 @@ function aplicarCupom() {
 
 function removerCupom() {
     descontoAtivo = 0;
-    nomeCupomAtivo = "";
+    nomeCupomAtivo = "PRIMEIRACOMPRA";
     document.getElementById('cupom-container').classList.remove('hidden');
     document.getElementById('cupom-feedback').classList.add('hidden');
     document.getElementById('input-cupom').value = "";
