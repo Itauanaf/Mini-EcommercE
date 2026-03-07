@@ -6,53 +6,92 @@
 }
 
 body { 
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+    font-family: 'Plus Jakarta Sans', sans-serif;
     color: var(--primary);
 }
 
-::-webkit-scrollbar { display: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* Componentes */
-.header-main {
-    @apply fixed top-0 w-full bg-white/95 backdrop-blur-sm z-50 px-5 py-4 flex justify-between items-center border-b border-gray-100;
+#texto-anuncio { transition: all 0.7s ease-in-out; }
+
+/* Estilo para os botões de pagamento */
+.payment-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
 }
 
-.logo { @apply font-bold text-xl tracking-wider uppercase; }
-
-.badge {
-    @apply absolute -top-2 -right-2 bg-black text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center;
+input[type="radio"]:checked + .payment-card {
+    background-color: #000 !important;
+    color: #fff !important;
+    border-color: #000 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
 }
 
-.section-title { @apply text-xs text-gray-400 mb-6 tracking-widest uppercase; }
-
-.product-img { @apply w-full h-60 object-cover rounded-sm mb-3 bg-gray-100; }
-
-.product-name { @apply text-sm font-medium truncate; }
-
-.product-footer { @apply flex justify-between items-center mt-1; }
-
-.price { @apply font-semibold; }
-
-.add-btn { @apply p-2 hover:bg-gray-100 rounded-full transition-colors; }
-
-.full-view { @apply fixed inset-0 bg-white z-[60] flex flex-col p-5; }
-
-.view-title { @apply text-2xl font-light; }
-
-.items-list { @apply flex-1 overflow-y-auto space-y-6; }
-
-.empty-msg { @apply text-gray-400 font-light text-center mt-10; }
-
-.footer-action { @apply border-t border-gray-100 pt-5 mt-5; }
-
-.btn-main {
-    @apply w-full bg-black text-white py-4 rounded-sm uppercase tracking-widest text-sm transition-opacity active:opacity-80;
+/* Estilo para itens da sacola */
+.cart-item {
+    border-bottom: 1px solid #f8fafc;
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
+/* --- AJUSTES DESKTOP (Mídia Querie) --- */
+@media (min-width: 768px) {
+    /* Centraliza e limita a largura do modal de detalhes */
+    #modal-tamanho {
+        align-items: center !important;
+        padding: 20px !important;
+    }
+    
+    #modal-tamanho > div {
+        max-width: 500px !important;
+        margin: auto !important;
+        border-radius: 3rem !important;
+        position: relative !important;
+        bottom: auto !important;
+    }
+
+    /* Transforma a sacola em uma barra lateral à direita */
+    #cart-view {
+        left: auto !important;
+        right: 0 !important;
+        width: 450px !important;
+        border-left: 1px solid #eee;
+        box-shadow: -10px 0 50px rgba(0,0,0,0.05);
+    }
+
+    /* Ajuste de animação para a sacola lateral */
+    #cart-view.animate-in {
+        animation: slideInRight 0.4s ease-out;
+    }
+
+    /* Efeito de hover nos cards de produto */
+    #grid-produtos > div {
+        transition: transform 0.3s ease;
+    }
+    
+    #grid-produtos > div:hover {
+        transform: translateY(-8px);
+    }
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+
+/* Utilitários do Tailwind que você usou no CSS original */
 .input-minimal {
-    @apply w-full p-3 bg-white border-b border-gray-200 rounded-none outline-none focus:border-black transition-colors;
+    width: 100%;
+    padding: 0.75rem;
+    background-color: white;
+    border-bottom: 1px solid #e5e7eb;
+    border-radius: 0;
+    outline: none;
+    transition: border-color 0.2s;
 }
 
-.readonly-field { @apply bg-gray-50 text-gray-500; }
-
-.input-group label { @apply text-[10px] text-gray-400 uppercase tracking-wider block mt-4; }
+.input-minimal:focus {
+    border-color: black;
+}

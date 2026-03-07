@@ -83,7 +83,7 @@ async function carregarProdutos() {
                             <span class="bg-white px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase shadow-xl text-slate-400">Esgotado</span>
                         </div>
                     ` : ''}
-                    <img src="${p.imagem_url}" class="object-cover w-full h-full transition-transform duration-700 ${estaEsgotado ? 'grayscale' : 'group-hover:scale-105'}">
+                    <img src="${p.imagem_url}" class="object-cover w-full h-full transition-transform duration-700 ${estaEsgotado ? '' : 'group-hover:scale-105'}">
                 </div>
 
                 <div class="px-3 pb-3">
