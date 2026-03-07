@@ -11,12 +11,12 @@
         .overflow-x-auto::-webkit-scrollbar { display: none; }
         .overflow-x-auto { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Ajuste fino para a tabela não quebrar layout */
-        #tabela-pedidos td {
+        /* Ajuste fino para as tabelas */
+        td {
             white-space: nowrap;
             padding: 1.25rem 1.5rem;
         }
-        /* Coluna de itens pode quebrar linha se for muito grande */
+        /* Coluna de itens dos pedidos */
         #tabela-pedidos td:nth-child(3) {
             white-space: normal;
             min-width: 220px;
@@ -72,50 +72,97 @@
         </nav>
 
         <main class="max-w-6xl mx-auto p-4 md:p-6">
+            
+            <section class="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100 p-6 md:p-8 mb-10">
+                <div class="mb-6">
+                    <h3 class="font-bold text-xl tracking-tight">Novo Produto</h3>
+                    <p class="text-xs text-slate-400">Adicione itens ao catálogo e controle o estoque inicial</p>
+                </div>
+
+                <form id="form-produto" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <input type="text" id="p-nome" placeholder="NOME DO PRODUTO" required
+                        class="md:col-span-2 bg-slate-50 border border-slate-100 rounded-2xl py-3 px-6 text-sm focus:outline-none focus:border-black transition-all">
+                    
+                    <input type="number" id="p-preco" placeholder="PREÇO (R$)" step="0.01" required
+                        class="bg-slate-50 border border-slate-100 rounded-2xl py-3 px-6 text-sm focus:outline-none focus:border-black transition-all">
+                    
+                    <input type="number" id="p-estoque" placeholder="ESTOQUE" required
+                        class="bg-slate-50 border border-slate-100 rounded-2xl py-3 px-6 text-sm focus:outline-none focus:border-black transition-all">
+                    
+                    <div class="relative">
+                        <input type="file" id="p-imagem" accept="image/*" required class="hidden">
+                        <label for="p-imagem" id="label-imagem" class="flex items-center justify-center gap-2 bg-slate-50 border border-dashed border-slate-200 rounded-2xl py-3 px-4 text-[10px] font-bold text-slate-400 cursor-pointer hover:bg-slate-100 transition-all h-full uppercase tracking-tighter text-center">
+                            <i class="bi bi-image"></i> FOTO
+                        </label>
+                    </div>
+
+                    <button type="submit" id="btn-salvar" class="md:col-span-5 bg-black text-white rounded-2xl py-4 text-[10px] font-bold tracking-[0.2em] uppercase hover:bg-slate-800 transition-all">
+                        CADASTRAR PRODUTO NO CATÁLOGO
+                    </button>
+                </form>
+            </section>
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-10">
                 <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Vendas do Mês</p>
                     <h2 id="total-mes" class="text-3xl md:text-4xl font-black text-slate-900 leading-none">R$ 0,00</h2>
                 </div>
-
                 <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Pedidos Totais</p>
                     <h2 id="qtd-pedidos" class="text-3xl md:text-4xl font-black text-slate-900 leading-none">0</h2>
                 </div>
-
                 <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Ticket Médio</p>
                     <h2 id="ticket-medio" class="text-3xl md:text-4xl font-black text-slate-900 leading-none">R$ 0,00</h2>
                 </div>
             </div>
 
+            <section class="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden mb-10">
+                <div class="p-6 md:p-8 border-b border-slate-50">
+                    <h3 class="font-bold text-xl tracking-tight">Gestão de Catálogo & Estoque</h3>
+                    <p class="text-xs text-slate-400">Clique nos valores para editar preço ou quantidade</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50/50 text-slate-400 text-[10px] uppercase tracking-widest font-bold">
+                                <th class="p-6">Produto</th>
+                                <th class="p-6">Preço (R$)</th>
+                                <th class="p-6">Estoque</th>
+                                <th class="p-6 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-estoque" class="text-sm divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
+            </section>
+
             <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
-                <div class="p-6 md:p-8 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white">
+                <div class="p-6 md:p-8 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                        <h3 class="font-bold text-xl tracking-tight">Últimos Pedidos</h3>
-                        <p class="text-xs text-slate-400">Gerenciamento de vendas em tempo real</p>
+                        <h3 class="font-bold text-xl tracking-tight">Histórico de Pedidos</h3>
+                        <p class="text-xs text-slate-400">Vendas registradas via site</p>
                     </div>
                     <button onclick="exportarCSV()" class="w-full sm:w-auto text-[10px] font-black bg-black text-white px-6 py-3 rounded-2xl hover:bg-slate-800 transition-all uppercase tracking-[0.1em]">
-                        Exportar Relatório
+                        Exportar Relatório Profissional
                     </button>
                 </div>
-
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-slate-50/50 text-slate-400 text-[10px] uppercase tracking-[0.15em] font-bold">
                                 <th class="p-6">Data</th>
                                 <th class="p-6">Cliente</th>
-                                <th class="p-6">Itens e Tamanhos</th>
+                                <th class="p-6">Itens</th>
                                 <th class="p-6">Total</th>
                                 <th class="p-6 text-right">Ações</th>
                             </tr>
                         </thead>
-                        <tbody id="tabela-pedidos" class="text-sm divide-y divide-slate-50">
-                            </tbody>
+                        <tbody id="tabela-pedidos" class="text-sm divide-y divide-slate-50"></tbody>
                     </table>
                 </div>
             </div>
+
         </main>
     </div>
 

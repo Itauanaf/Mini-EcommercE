@@ -49,7 +49,7 @@ function rotacionarAnuncios() {
 }
 setInterval(rotacionarAnuncios, 5000);
 
-// --- CARREGAMENTO DE PRODUTOS (AJUSTADO) ---
+// --- 3. CARREGAMENTO DE PRODUTOS COM TRAVA DE ESTOQUE ---
 async function carregarProdutos() {
     const { data: produtos, error } = await supabaseClient
         .from('produtos')
@@ -59,41 +59,52 @@ async function carregarProdutos() {
     const grid = document.getElementById('grid-produtos');
     
     if (error) {
-        console.error("ERRO DETALHADO DO SUPABASE:", error.message, error.details, error.hint);
+        console.error("ERRO SUPABASE:", error.message);
         return;
     }
 
     if (!produtos || produtos.length === 0) {
-        console.warn("A conexão funcionou, mas a tabela 'produtos' está vazia.");
         grid.innerHTML = "<p class='text-center w-full opacity-50 italic'>Nenhum produto cadastrado no banco.</p>";
         return;
     }
 
-    // ... restante do código de mapeamento (pode manter o anterior)
     grid.innerHTML = produtos.map(p => {
+        const estoque = Number(p.estoque) || 0;
+        const estaEsgotado = estoque <= 0;
         const produtoJSON = JSON.stringify(p).replace(/'/g, "\\'");
+        
         return `
-            <div onclick='abrirModalDetalhes(${produtoJSON})' class="flex flex-col h-full group cursor-pointer bg-white rounded-[2.5rem] p-2 transition-all duration-300 active:scale-95">
+            <div ${estaEsgotado ? '' : `onclick='abrirModalDetalhes(${produtoJSON})'`} 
+                 class="flex flex-col h-full group ${estaEsgotado ? 'cursor-not-allowed opacity-70' : 'cursor-pointer active:scale-95'} bg-white rounded-[2.5rem] p-2 transition-all duration-300">
+                
                 <div class="relative overflow-hidden aspect-[3/4] rounded-[2.2rem] bg-slate-50 mb-4">
-                    <img src="${p.imagem_url}" class="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105">
+                    ${estaEsgotado ? `
+                        <div class="absolute inset-0 z-10 flex items-center justify-center bg-black/5 backdrop-blur-[2px]">
+                            <span class="bg-white px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase shadow-xl text-slate-400">Esgotado</span>
+                        </div>
+                    ` : ''}
+                    <img src="${p.imagem_url}" class="object-cover w-full h-full transition-transform duration-700 ${estaEsgotado ? 'grayscale' : 'group-hover:scale-105'}">
                 </div>
+
                 <div class="px-3 pb-3">
                     <h3 class="text-[14px] font-light text-slate-700 tracking-tight leading-tight mb-1">${p.nome}</h3>
-                    <p class="text-[16px] font-semibold text-slate-900">R$ ${p.preco.toFixed(2)}</p>
+                    <p class="text-[16px] font-semibold text-slate-900">
+                        ${estaEsgotado ? '<span class="text-slate-300 italic font-normal text-sm">Indisponível</span>' : `R$ ${p.preco.toFixed(2)}`}
+                    </p>
                 </div>
             </div>
         `;
     }).join('');
 }
 
-// --- MODAL DE DETALHES ---
+// --- 4. MODAL E SELEÇÃO ---
 function abrirModalDetalhes(produto) {
     produtoSelecionado = produto;
     tamanhoSelecionado = null;
     corSelecionada = null;
     
     const listaTamanhos = produto.tamanhos ? produto.tamanhos.split(',') : ['P', 'M', 'G', 'GG'];
-    const listaCores = produto.Cores ? produto.Cores.split(',') : (produto.cores ? produto.cores.split(',') : ['Única']);
+    const listaCores = produto.cores ? produto.cores.split(',') : (produto.Cores ? produto.Cores.split(',') : ['Única']);
     
     const modalHTML = `
         <div id="modal-tamanho" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
@@ -147,7 +158,6 @@ function abrirModalDetalhes(produto) {
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
-// TROCA DE IMAGEM AO SELECIONAR COR
 function selecionarCor(elemento, cor) {
     corSelecionada = cor;
     document.querySelectorAll('.btn-cor').forEach(btn => btn.classList.remove('border-black', 'ring-2', 'ring-offset-2', 'ring-slate-400'));
@@ -192,7 +202,13 @@ function validarSelecao() {
 
 function confirmarAdicao() {
     if (produtoSelecionado && tamanhoSelecionado && corSelecionada) {
-        cart.push({ name: produtoSelecionado.nome, price: produtoSelecionado.preco, size: tamanhoSelecionado, color: corSelecionada });
+        cart.push({ 
+            id: produtoSelecionado.id, // ID importante para a baixa de estoque
+            name: produtoSelecionado.nome, 
+            price: produtoSelecionado.preco, 
+            size: tamanhoSelecionado, 
+            color: corSelecionada 
+        });
         updateCartUI();
         fecharModal(); 
     }
@@ -200,7 +216,7 @@ function confirmarAdicao() {
 
 function fecharModal() { document.getElementById('modal-tamanho')?.remove(); }
 
-// --- LÓGICA DE CUPOM ---
+// --- 5. LÓGICA DE CUPOM ---
 function aplicarCupom() {
     const input = document.getElementById('input-cupom');
     const codigo = input.value.toUpperCase().trim();
@@ -230,7 +246,7 @@ function removerCupom() {
     updateCartUI();
 }
 
-// --- GESTÃO DA SACOLA ---
+// --- 6. GESTÃO DA SACOLA ---
 function updateCartUI() {
     const list = document.getElementById('cart-items-list');
     const badge = document.getElementById('cart-count');
@@ -283,7 +299,7 @@ function atualizarPrecoFinal() {
     if (btn) btn.innerHTML = `FINALIZAR COMPRA • R$ ${totalGeral.toFixed(2)}`;
 }
 
-// --- BUSCA CEP ---
+// --- 7. BUSCA CEP ---
 async function buscaCEP(cep) {
     const valor = cep.replace(/\D/g, '');
     if (valor.length === 8) {
@@ -304,7 +320,7 @@ async function buscaCEP(cep) {
     }
 }
 
-// --- FINALIZAÇÃO ---
+// --- 8. FINALIZAÇÃO COM BAIXA AUTOMÁTICA DE ESTOQUE ---
 async function finalizarCompra(event) {
     if (event) event.preventDefault();
     const btn = document.getElementById('btn-finalizar');
@@ -317,18 +333,29 @@ async function finalizarCompra(event) {
     if (!nome || !numero || !cep) return alert("Preencha todos os dados.");
     if (btn) { btn.innerText = "PROCESSANDO..."; btn.disabled = true; }
 
-    const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
-    const valorDesconto = (descontoAtivo < 1) ? (subtotal * descontoAtivo) : descontoAtivo;
-    const totalFinal = Math.max(0, subtotal - valorDesconto) + valorFreteAtual;
+    try {
+        // --- BAIXA DE ESTOQUE EM TEMPO REAL ---
+        for (const item of cart) {
+            // Busca estoque atual
+            const { data: pData } = await supabaseClient.from('produtos').select('estoque').eq('id', item.id).single();
+            const novoEstoque = Math.max(0, (pData?.estoque || 0) - 1);
+            
+            // Atualiza no banco
+            await supabaseClient.from('produtos').update({ estoque: novoEstoque }).eq('id', item.id);
+        }
 
-    const { error } = await supabaseClient.from('pedidos').insert([{
-        nome, cep, rua, numero, total: totalFinal, pagamento, itens_json: cart 
-    }]);
+        const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
+        const valorDesconto = (descontoAtivo < 1) ? (subtotal * descontoAtivo) : descontoAtivo;
+        const totalFinal = Math.max(0, subtotal - valorDesconto) + valorFreteAtual;
 
-    if (error) {
-        alert("Erro ao salvar: " + error.message);
-        if (btn) { btn.innerText = "FINALIZAR COMPRA"; btn.disabled = false; }
-    } else {
+        // Inserir Pedido no Banco
+        const { error } = await supabaseClient.from('pedidos').insert([{
+            nome, cep, rua, numero, total: totalFinal, pagamento, itens_json: cart 
+        }]);
+
+        if (error) throw error;
+
+        // Gerar Texto WhatsApp
         let texto = `*NOVO PEDIDO - ÉDEN.WEAR*\n\n`;
         texto += `*CLIENTE:* ${nome}\n*CIDADE:* ${cidadeAtual}\n*ENDEREÇO:* ${rua}, nº ${numero}\n\n*ITENS:*\n`;
         cart.forEach(i => { texto += `- ${i.name} (${i.color}/${i.size})\n`; });
@@ -338,10 +365,17 @@ async function finalizarCompra(event) {
         
         window.location.href = `https://wa.me/5587988501105?text=${encodeURIComponent(texto)}`;
         
-        cart = []; updateCartUI();
+        // Reset de Estado
+        cart = []; 
+        updateCartUI();
         document.getElementById('order-form').reset();
         removerCupom();
         showView('shop-view');
+        carregarProdutos(); // Atualiza a vitrine para refletir o novo estoque
+
+    } catch (err) {
+        alert("Erro ao processar pedido: " + err.message);
+        if (btn) { btn.innerText = "FINALIZAR COMPRA"; btn.disabled = false; }
     }
 }
 
