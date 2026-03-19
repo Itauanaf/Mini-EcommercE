@@ -370,7 +370,7 @@ async function finalizarCompra(event) {
         if (error) throw error;
 
         // Gerar Texto WhatsApp
-        let texto = `*NOVO PEDIDO - ÉDEN.WEAR*\n\n`;
+        let texto = `*NOVO PEDIDO - ÉDEN*\n\n`;
         texto += `*CLIENTE:* ${nome}\n*CIDADE:* ${cidadeAtual}\n*ENDEREÇO:* ${rua}, nº ${numero}\n\n*ITENS:*\n`;
         cart.forEach(i => { texto += `- ${i.name} (${i.color}/${i.size})\n`; });
         

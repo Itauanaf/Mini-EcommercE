@@ -176,7 +176,7 @@ function exportarCSV() {
 
     // --- 2. ABA 1: DASHBOARD DE PERFORMANCE ---
     const dadosResumo = [
-        { "MÉTRICA": "RELATÓRIO DE VENDAS", "VALOR": "ÉDEN.WEAR - OFICIAL" },
+        { "MÉTRICA": "RELATÓRIO DE VENDAS", "VALOR": "ÉDEN - OFICIAL" },
         { "MÉTRICA": "Data de Extração", "VALOR": new Date().toLocaleString('pt-BR') },
         { "MÉTRICA": "", "VALOR": "" }, // Linha vazia
         { "MÉTRICA": "FATURAMENTO BRUTO", "VALOR": `R$ ${faturamentoTotal.toFixed(2)}` },
