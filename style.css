@@ -83,3 +83,28 @@ input[type="radio"]:checked + .payment-card {
     cursor: pointer;
 }
 
+/* Centralização da mensagem de carrinho vazio */
+#cart-items-list:empty, 
+#cart-items-list:has(.bi-bag-x) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Faz o carrinho deslizar por cima do conteúdo atual */
+#cart-view {
+    z-index: 200;
+    transition: transform 0.3s ease-in-out;
+    background-color: white;
+}
+
+/* Opcional: Adicionar um overlay escuro atrás do carrinho quando aberto */
+#cart-view:not(.hidden)::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: -1;
+    left: -100vw; /* Estende a sombra para a esquerda da barra */
+    width: 100vw;
+}

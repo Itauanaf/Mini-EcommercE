@@ -30,24 +30,16 @@
         </div>
     </header>
 
-    <main id="shop-view" class="view-section w-full overflow-x-hidden">
-        
+    <main id="shop-view" class="view-section w-full overflow-x-hidden pt-[100px]">
         <section class="relative w-full h-[80vh] md:h-[90vh] overflow-hidden bg-slate-900">
             <picture>
                 <source media="(max-width: 768px)" srcset="assets/banner-mobile.png">
-                
-                <img src="assets/banner-desktop.png" 
-                     class="w-full h-full object-cover object-center animate-subtle-zoom" 
-                     alt="Nova Coleção Éden">
+                <img src="assets/banner-desktop.png" class="w-full h-full object-cover object-center animate-subtle-zoom" alt="Nova Coleção Éden">
             </picture>
-            
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-
             <div class="absolute inset-0 flex flex-col justify-end p-8 md:p-20 text-white max-w-7xl mx-auto w-full">
                 <span class="text-[10px] md:text-xs font-bold tracking-[0.6em] uppercase mb-4 opacity-90">Drop '1 Disponível</span>
-                <h2 class="text-5xl md:text-8xl font-bold italic tracking-tighter leading-[0.9] mb-8">
-                    ÁGUAS VIVAS<br>OVERSIZED
-                </h2>
+                <h2 class="text-5xl md:text-8xl font-bold italic tracking-tighter leading-[0.9] mb-8">ÁGUAS VIVAS<br>OVERSIZED</h2>
                 <div class="flex gap-4">
                     <button onclick="document.getElementById('grid-produtos').scrollIntoView({behavior: 'smooth'})" 
                             class="bg-white text-black px-10 py-4 rounded-full text-[11px] font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-all active:scale-95">
@@ -66,13 +58,84 @@
         </div>
     </main>
 
-    <footer class="mt-24 pb-20 bg-white">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="w-full h-[1px] bg-slate-100 mb-12"></div>
-            <div class="flex flex-col items-center justify-center text-center">
-                <h2 class="text-[11px] font-bold tracking-[0.8em] text-slate-900 uppercase mb-3">ÉDEN</h2>
-                <p class="text-[9px] text-slate-400 uppercase tracking-[0.4em] font-medium">© 2026</p>
+    <aside id="cart-view" class="view-section hidden fixed inset-y-0 right-0 w-full md:w-[450px] bg-white z-[200] shadow-2xl flex flex-col p-8">
+        <div class="flex justify-between items-center mb-10">
+            <h2 class="text-2xl font-bold italic tracking-tighter">SUA SACOLA</h2>
+            <button onclick="showView('shop-view')" class="text-slate-400 hover:text-black">
+    <i class="bi bi-x-lg text-xl"></i>
+</button>
+        </div>
+
+        <div id="cart-items-list" class="flex-1 overflow-y-auto no-scrollbar">
             </div>
+
+        <div class="border-t border-slate-100 pt-8 mt-6">
+            <div class="flex justify-between mb-6">
+                <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Total</span>
+                <span id="cart-total-value" class="text-xl font-bold">R$ 0,00</span>
+            </div>
+            <button onclick="checkout()" class="w-full py-5 bg-black text-white text-[11px] font-bold uppercase tracking-[0.2em] rounded-2xl hover:bg-slate-800 transition-all active:scale-95">
+                Fechar Pedido
+            </button>
+        </div>
+    </aside>
+
+    <section id="checkout-view" class="view-section hidden w-full max-w-2xl mx-auto px-6 pt-[140px] pb-20">
+        <h2 class="text-3xl font-bold italic tracking-tighter mb-10">FINALIZAR PEDIDO</h2>
+        
+        <form id="order-form" onsubmit="finalizarCompra(event)" class="space-y-8">
+            <div class="space-y-4">
+                <h3 class="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400 border-b pb-2">Informações de Entrega</h3>
+                <input type="text" id="nome" placeholder="Seu nome completo" class="w-full p-4 bg-slate-50 rounded-xl outline-none focus:ring-1 ring-black transition-all" required>
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="cep" placeholder="CEP" onblur="buscaCEP(this.value)" class="w-full p-4 bg-slate-50 rounded-xl outline-none" required>
+                    <input type="text" id="numero" placeholder="Nº" class="w-full p-4 bg-slate-50 rounded-xl outline-none" required>
+                </div>
+                <input type="text" id="rua" placeholder="Endereço Completo" class="w-full p-4 bg-slate-50 rounded-xl outline-none" required>
+            </div>
+
+            <div id="cupom-container" class="flex gap-2">
+                <input type="text" id="input-cupom" placeholder="CUPOM DE DESCONTO" class="flex-1 p-4 bg-slate-50 rounded-xl outline-none uppercase text-xs tracking-widest">
+                <button type="button" onclick="aplicarCupom()" class="px-6 bg-slate-100 text-[10px] font-bold uppercase rounded-xl">Aplicar</button>
+            </div>
+            <div id="cupom-feedback" class="hidden flex justify-between items-center p-4 bg-green-50 text-green-700 rounded-xl">
+                <span id="texto-cupom-aplicado" class="text-[10px] font-bold tracking-widest"></span>
+                <button type="button" onclick="removerCupom()" class="text-xs underline">Remover</button>
+            </div>
+
+            <div id="secao-frete" class="hidden p-4 bg-slate-50 rounded-xl flex justify-between items-center">
+                <div>
+                    <p id="label-frete" class="text-[10px] font-bold uppercase tracking-widest"></p>
+                    <p class="text-[9px] text-slate-400">Entrega via motoboy ou correios</p>
+                </div>
+                <span id="valor-frete" class="font-bold text-sm"></span>
+            </div>
+
+            <div class="space-y-4">
+                <h3 class="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400 border-b pb-2">Forma de Pagamento</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="pagamento" value="PIX" class="hidden" required>
+                        <div class="payment-card p-4 bg-slate-50 rounded-xl text-center text-[10px] font-bold tracking-widest uppercase">PIX (10% OFF)</div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="pagamento" value="Cartão" class="hidden" required>
+                        <div class="payment-card p-4 bg-slate-50 rounded-xl text-center text-[10px] font-bold tracking-widest uppercase">Cartão</div>
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" id="btn-finalizar" class="w-full py-5 bg-black text-white text-[11px] font-bold uppercase tracking-[0.2em] rounded-2xl active:scale-95 transition-all">
+                Finalizar no WhatsApp
+            </button>
+        </form>
+    </section>
+
+    <footer class="mt-24 pb-20 bg-white">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <div class="w-full h-[1px] bg-slate-100 mb-12"></div>
+            <h2 class="text-[11px] font-bold tracking-[0.8em] text-slate-900 uppercase mb-3">ÉDEN</h2>
+            <p class="text-[9px] text-slate-400 uppercase tracking-[0.4em] font-medium">© 2026</p>
         </div>
     </footer>
 
