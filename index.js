@@ -406,3 +406,19 @@ function checkout() {
 
 // INICIALIZAÇÃO
 carregarProdutos();
+
+window.onscroll = function() {
+    const header = document.getElementById('main-header');
+    const logo = document.querySelector('.brand-logo');
+    
+    if (document.body.scrollTop > 50 || document.documentElement.scrollTop > 50) {
+        header.style.paddingTop = "10px";
+        header.style.paddingBottom = "10px";
+        logo.style.fontSize = "1.3rem"; // Diminui o logo suavemente
+    } else {
+        header.style.paddingTop = "20px";
+        header.style.paddingBottom = "20px";
+        logo.style.fontSize = "1.8rem"; // Volta ao tamanho original
+    }
+};
+

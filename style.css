@@ -29,69 +29,57 @@ input[type="radio"]:checked + .payment-card {
     box-shadow: 0 10px 20px rgba(0,0,0,0.1);
 }
 
-/* Estilo para itens da sacola */
-.cart-item {
-    border-bottom: 1px solid #f8fafc;
-    padding-bottom: 1.5rem;
-    margin-bottom: 1.5rem;
-}
-
-/* --- AJUSTES DESKTOP (Mídia Querie) --- */
+/* --- AJUSTES DESKTOP --- */
 @media (min-width: 768px) {
-    /* Centraliza e limita a largura do modal de detalhes */
-    #modal-tamanho {
-        align-items: center !important;
-        padding: 20px !important;
-    }
-    
-    #modal-tamanho > div {
-        max-width: 500px !important;
-        margin: auto !important;
-        border-radius: 3rem !important;
-        position: relative !important;
-        bottom: auto !important;
-    }
-
-    /* Transforma a sacola em uma barra lateral à direita */
     #cart-view {
         left: auto !important;
         right: 0 !important;
         width: 450px !important;
         border-left: 1px solid #eee;
-        box-shadow: -10px 0 50px rgba(0,0,0,0.05);
-    }
-
-    /* Ajuste de animação para a sacola lateral */
-    #cart-view.animate-in {
-        animation: slideInRight 0.4s ease-out;
-    }
-
-    /* Efeito de hover nos cards de produto */
-    #grid-produtos > div {
-        transition: transform 0.3s ease;
-    }
-    
-    #grid-produtos > div:hover {
-        transform: translateY(-8px);
     }
 }
 
-@keyframes slideInRight {
-    from { transform: translateX(100%); }
-    to { transform: translateX(0); }
+/* Efeito de Zoom Suave */
+@keyframes subtle-zoom {
+    from { transform: scale(1.0); }
+    to { transform: scale(1.05); } /* Diminuí o zoom para não perder tanta qualidade */
 }
 
-/* Utilitários do Tailwind que você usou no CSS original */
-.input-minimal {
+.animate-subtle-zoom {
+    animation: subtle-zoom 20s infinite alternate ease-in-out;
+}
+
+/* --- O AJUSTE DE QUALIDADE QUE VOCÊ QUERIA --- */
+/* Ajuste de qualidade e alinhamento do banner */
+#shop-view section picture img {
     width: 100%;
-    padding: 0.75rem;
-    background-color: white;
-    border-bottom: 1px solid #e5e7eb;
-    border-radius: 0;
-    outline: none;
-    transition: border-color 0.2s;
+    height: 100%;
+    object-fit: cover; /* Garante que a imagem preencha o espaço sem distorcer */
+    object-position: center center; /* Centraliza o foco da imagem */
+    
+    /* Configurações de Nitidez Máxima */
+    image-rendering: -webkit-optimize-contrast; 
+    image-rendering: crisp-edges;
+    will-change: transform;
+    
+    /* Leve ajuste de definição mantendo o design */
+    filter: contrast(1.05) brightness(0.95); 
 }
 
-.input-minimal:focus {
-    border-color: black;
+/* Ajuste Mobile: Garante que o banner ocupe uma boa altura no celular */
+@media (max-width: 768px) {
+    #shop-view section.h-\[80vh\] {
+        height: 85vh !important; /* Um pouco mais alto no celular para valorizar a foto vertical */
+    }
 }
+
+.brand-logo {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 1.8rem;
+    text-transform: uppercase;
+    font-style: italic;
+    letter-spacing: -0.05em;
+    color: #000;
+    cursor: pointer;
+}
+
