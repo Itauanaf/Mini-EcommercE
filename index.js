@@ -1,105 +1,133 @@
+// =============================================
 // 1. CONFIGURAÇÃO SUPABASE
+// =============================================
 const SB_URL = 'https://sfgbwdeochbvqabtjdbf.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmZ2J3ZGVvY2hidnFhYnRqZGJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3NDA5NTQsImV4cCI6MjA4NTMxNjk1NH0.wDBUHJUnHJCS1LNzNPVs9PUEp0EYKUYFOZiKDArpfJU';
 const supabaseClient = window.supabase.createClient(SB_URL, SB_KEY);
 
+// =============================================
 // 2. VARIÁVEIS GLOBAIS
+// =============================================
 let cart = [];
-let produtoSelecionado = null; 
+let produtoSelecionado = null;
 let tamanhoSelecionado = null;
 let corSelecionada = null;
 let valorFreteAtual = 0;
-let cidadeAtual = ""; 
-
-// VARIÁVEIS DE CUPOM
-let descontoAtivo = 0; 
-let nomeCupomAtivo = "";
+let cidadeAtual = '';
+let descontoAtivo = 0;
+let nomeCupomAtivo = '';
 
 const CUPONS_VALIDOS = {
-    "EDEN10": 0.10,        
-    "PRIMEIRACOMPRA": 0.15, 
-    "OFF20": 20.00         
+    'EDEN10': 0.10,
+    'PRIMEIRACOMPRA': 0.15,
+    'OFF20': 20.00
 };
 
 const tradutorCores = {
-    "Preto": "#000000", "Branco": "#FFFFFF", "Off-White": "#F8F8F2", 
-    "Marrom": "#5D4037", "Marinho": "#001F3F", "Areia": "#C2B280", "Aria": "#D2D2D2"
+    'Preto': '#000000', 'Branco': '#FFFFFF', 'Off-White': '#F8F8F2',
+    'Marrom': '#5D4037', 'Marinho': '#001F3F', 'Areia': '#C2B280', 'Aria': '#D2D2D2'
 };
 
-// --- LÓGICA DA BARRA DE ANÚNCIOS ---
+// =============================================
+// 3. PERSISTÊNCIA (localStorage)
+// =============================================
+function salvarCarrinho() {
+    try { localStorage.setItem('eden_cart', JSON.stringify(cart)); } catch (e) {}
+}
+function carregarCarrinho() {
+    try { const s = localStorage.getItem('eden_cart'); if (s) cart = JSON.parse(s); } catch (e) { cart = []; }
+}
+
+// =============================================
+// 4. TOAST
+// =============================================
+function showToast(mensagem, tipo = 'success') {
+    const old = document.getElementById('eden-toast');
+    if (old) old.remove();
+    const t = document.createElement('div');
+    t.id = 'eden-toast';
+    t.style.cssText = `position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(16px);z-index:9999;display:flex;align-items:center;gap:10px;padding:1rem 1.5rem;border-radius:1rem;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;opacity:0;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 8px 32px rgba(0,0,0,0.18);${tipo === 'success' ? 'background:#000;color:#fff;' : 'background:#ef4444;color:#fff;'}`;
+    t.innerHTML = tipo === 'success' ? `<i class="bi bi-check-circle-fill"></i> ${mensagem}` : `<i class="bi bi-x-circle-fill"></i> ${mensagem}`;
+    document.body.appendChild(t);
+    requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateX(-50%) translateY(0)'; });
+    setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(16px)'; setTimeout(() => t.remove(), 400); }, 2500);
+}
+
+// =============================================
+// 5. BARRA DE ANÚNCIOS
+// =============================================
 const anuncios = [
-    "FRETE FIXO PARA PETROLINA & JUAZEIRO",
-    "PARCELE EM ATÉ 3X SEM JUROS",
-    "PEÇAS EXCLUSIVAS & LIMITADAS",
+    'FRETE FIXO PARA PETROLINA & JUAZEIRO',
+    'PARCELE EM ATÉ 3X SEM JUROS',
+    'PEÇAS EXCLUSIVAS & LIMITADAS',
     "CUPOM 'EDEN10' NA PRIMEIRA COMPRA"
 ];
-
 let anuncioAtual = 0;
 function rotacionarAnuncios() {
-    const elementoTexto = document.getElementById('texto-anuncio');
-    if (!elementoTexto) return;
-    elementoTexto.style.opacity = '0';
-    elementoTexto.style.transform = 'translateY(5px)';
+    const el = document.getElementById('texto-anuncio');
+    if (!el) return;
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(5px)';
     setTimeout(() => {
         anuncioAtual = (anuncioAtual + 1) % anuncios.length;
-        elementoTexto.innerText = anuncios[anuncioAtual];
-        elementoTexto.style.opacity = '1';
-        elementoTexto.style.transform = 'translateY(0px)';
+        el.innerText = anuncios[anuncioAtual];
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
     }, 700);
 }
 setInterval(rotacionarAnuncios, 5000);
 
-// --- 3. CARREGAMENTO DE PRODUTOS ---
+// =============================================
+// 6. PRODUTOS
+// =============================================
 async function carregarProdutos() {
     const { data: produtos, error } = await supabaseClient
-        .from('produtos')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from('produtos').select('*').order('created_at', { ascending: false });
 
     const grid = document.getElementById('grid-produtos');
-    if (error) { console.error("ERRO SUPABASE:", error.message); return; }
-
-    if (!produtos || produtos.length === 0) {
-        grid.innerHTML = "<p class='text-center w-full opacity-50 italic py-20'>Nenhum produto disponível no momento.</p>";
+    if (error || !produtos || produtos.length === 0) {
+        grid.innerHTML = "<p class='col-span-full text-center py-10 text-slate-400 italic'>Nenhum produto disponível no momento.</p>";
         return;
     }
 
     grid.innerHTML = produtos.map(p => {
-        const estoque = Number(p.estoque) || 0;
-        const estaEsgotado = estoque <= 0;
-        const produtoJSON = JSON.stringify(p).replace(/'/g, "\\'");
-        
+        const esgotado = Number(p.estoque) <= 0;
+        const json = JSON.stringify(p).replace(/'/g, "\\'");
         return `
-            <div ${estaEsgotado ? '' : `onclick='abrirModalDetalhes(${produtoJSON})'`} 
-                 class="flex flex-col h-full group ${estaEsgotado ? 'cursor-not-allowed opacity-70' : 'cursor-pointer active:scale-95'} bg-white rounded-[2.5rem] p-2 transition-all duration-300">
-                <div class="relative overflow-hidden aspect-[3/4] rounded-[2.2rem] bg-slate-50 mb-4">
-                    ${estaEsgotado ? `<div class="absolute inset-0 z-10 flex items-center justify-center bg-black/5 backdrop-blur-[2px]"><span class="bg-white px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase shadow-xl text-slate-400">Esgotado</span></div>` : ''}
-                    <img src="${p.imagem_url}" class="object-cover w-full h-full transition-transform duration-700 ${estaEsgotado ? '' : 'group-hover:scale-105'}">
-                </div>
-                <div class="px-3 pb-3">
-                    <h3 class="text-[14px] font-light text-slate-700 tracking-tight leading-tight mb-1">${p.nome}</h3>
-                    <p class="text-[16px] font-semibold text-slate-900">${estaEsgotado ? '<span class="text-slate-300 italic font-normal text-sm">Indisponível</span>' : `R$ ${p.preco.toFixed(2)}`}</p>
-                </div>
+        <div ${esgotado ? '' : `onclick='abrirModalDetalhes(${json})'`}
+             class="flex flex-col h-full group ${esgotado ? 'cursor-not-allowed opacity-70' : 'cursor-pointer active:scale-95'} bg-white rounded-[2.5rem] p-2 transition-all duration-300">
+            <div class="relative overflow-hidden aspect-[3/4] rounded-[2.2rem] bg-slate-100 mb-4 skeleton-box">
+                ${esgotado ? `<div class="absolute inset-0 z-10 flex items-center justify-center bg-black/5 backdrop-blur-[2px]"><span class="bg-white px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase shadow-xl text-slate-400">Esgotado</span></div>` : ''}
+                <img src="${p.imagem_url}"
+                     onload="this.parentElement.classList.remove('skeleton-box')"
+                     onerror="this.parentElement.classList.remove('skeleton-box')"
+                     class="object-cover w-full h-full transition-transform duration-700 ${esgotado ? '' : 'group-hover:scale-105'}">
             </div>
-        `;
+            <div class="px-3 pb-3">
+                <h3 class="text-[14px] font-light text-slate-700 tracking-tight leading-tight mb-1">${p.nome}</h3>
+                <p class="text-[16px] font-semibold text-slate-900">${esgotado ? '<span class="text-slate-300 italic font-normal text-sm">Indisponível</span>' : `R$ ${p.preco.toFixed(2)}`}</p>
+            </div>
+        </div>`;
     }).join('');
 }
 
-// --- 4. MODAL E SELEÇÃO ---
+// =============================================
+// 7. MODAL DE DETALHES
+// =============================================
 function abrirModalDetalhes(produto) {
     produtoSelecionado = produto;
     tamanhoSelecionado = null;
     corSelecionada = null;
-    
-    const listaTamanhos = produto.tamanhos ? produto.tamanhos.split(',') : ['P', 'M', 'G', 'GG'];
-    const listaCores = produto.cores ? produto.cores.split(',') : ['Única'];
-    
-    const modalHTML = `
-        <div id="modal-tamanho" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
-            <div class="bg-white w-full max-w-md rounded-t-[3rem] sm:rounded-[3rem] p-8 shadow-2xl">
+
+    const tamanhos = produto.tamanhos ? produto.tamanhos.split(',') : ['P', 'M', 'G', 'GG'];
+    const cores = produto.cores ? produto.cores.split(',') : ['Única'];
+
+    document.body.insertAdjacentHTML('beforeend', `
+        <div id="modal-tamanho" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[300] flex items-end sm:items-center justify-center p-0 sm:p-4 modal-overlay" onclick="fecharModalFora(event)">
+            <div class="modal-sheet bg-white w-full max-w-md rounded-t-[3rem] sm:rounded-[3rem] p-8 shadow-2xl">
                 <div class="flex justify-between items-start mb-6">
                     <div class="flex gap-4">
-                        <img id="imagem-modal" src="${produto.imagem_url}" class="w-16 h-20 object-cover rounded-xl shadow-sm transition-all duration-500">
+                        <img id="imagem-modal" src="${produto.imagem_url}" onerror="this.src='${produto.imagem_url}'" class="w-16 h-20 object-cover rounded-xl shadow-sm transition-all duration-500">
                         <div>
                             <h2 class="text-lg font-bold text-slate-900">${produto.nome}</h2>
                             <p class="text-slate-500 font-medium text-sm">R$ ${produto.preco.toFixed(2)}</p>
@@ -109,160 +137,193 @@ function abrirModalDetalhes(produto) {
                 </div>
                 <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-3 text-center">1. Escolha a Cor</p>
                 <div class="flex flex-wrap justify-center gap-4 mb-6">
-                    ${listaCores.map(cor => {
-                        const nomeCor = cor.trim();
-                        const hex = tradutorCores[nomeCor] || "#cbd5e1"; 
-                        return `
-                            <div class="flex flex-col items-center gap-1">
-                                <button onclick="selecionarCor(this, '${nomeCor}')" 
-                                    style="background-color: ${hex}; ${nomeCor === 'Branco' ? 'border: 1px solid #eee' : ''}"
-                                    class="btn-cor w-10 h-10 rounded-full border-2 border-transparent shadow-sm transition-all active:scale-90"></button>
-                                <span class="text-[10px] text-slate-400">${nomeCor}</span>
-                            </div>
-                        `;
+                    ${cores.map(cor => {
+                        const nome = cor.trim();
+                        const hex = tradutorCores[nome] || '#cbd5e1';
+                        return `<div class="flex flex-col items-center gap-1">
+                            <button onclick="selecionarCor(this,'${nome}')" style="background-color:${hex};${nome==='Branco'?'border:1px solid #eee':''}" class="btn-cor w-10 h-10 rounded-full border-2 border-transparent shadow-sm transition-all active:scale-90"></button>
+                            <span class="text-[10px] text-slate-400">${nome}</span>
+                        </div>`;
                     }).join('')}
                 </div>
                 <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-3 text-center">2. Escolha o Tamanho</p>
                 <div class="grid grid-cols-4 gap-3 mb-8">
-                    ${listaTamanhos.map(tam => `<button onclick="selecionarTamanho(this, '${tam.trim()}')" class="btn-tamanho h-12 text-sm font-bold border border-slate-100 bg-slate-50 rounded-2xl transition-all">${tam.trim()}</button>`).join('')}
+                    ${tamanhos.map(t => `<button onclick="selecionarTamanho(this,'${t.trim()}')" class="btn-tamanho h-12 text-sm font-bold border border-slate-100 bg-slate-50 rounded-2xl transition-all">${t.trim()}</button>`).join('')}
                 </div>
                 <button id="btn-confirmar-add" disabled onclick="confirmarAdicao()" class="w-full py-4 bg-slate-100 text-slate-400 font-bold rounded-2xl transition-all cursor-not-allowed">ADICIONAR À SACOLA</button>
             </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
+        </div>`);
+    document.body.style.overflow = 'hidden';
 }
+
+function fecharModalFora(e) { if (e.target.id === 'modal-tamanho') fecharModal(); }
 
 function selecionarCor(el, cor) {
     corSelecionada = cor;
     document.querySelectorAll('.btn-cor').forEach(b => b.classList.remove('ring-2', 'ring-black', 'ring-offset-2'));
     el.classList.add('ring-2', 'ring-black', 'ring-offset-2');
-
-    const imgModal = document.getElementById('imagem-modal');
-    if (imgModal && produtoSelecionado) {
-        let linkOriginal = produtoSelecionado.imagem_url.trim().split('?')[0];
+    const img = document.getElementById('imagem-modal');
+    if (img && produtoSelecionado) {
+        const original = produtoSelecionado.imagem_url.trim().split('?')[0];
         const primeiraCor = produtoSelecionado.cores.split(',')[0].trim().toLowerCase();
-        
         if (cor.toLowerCase().trim() === primeiraCor) {
-            imgModal.src = linkOriginal;
+            img.src = original;
         } else {
-            const pontoIndice = linkOriginal.lastIndexOf('.');
-            const baseLink = linkOriginal.substring(0, pontoIndice);
-            const extensao = linkOriginal.substring(pontoIndice);
-            const sufixo = cor.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
-            imgModal.src = `${baseLink}-${sufixo}${extensao}`;
+            const idx = original.lastIndexOf('.');
+            const base = original.substring(0, idx);
+            const ext = original.substring(idx);
+            const sufixo = cor.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-');
+            img.onerror = () => { img.src = original; img.onerror = null; };
+            img.src = `${base}-${sufixo}${ext}`;
         }
     }
     validarSelecao();
 }
 
-function selecionarTamanho(elemento, tamanho) {
-    tamanhoSelecionado = tamanho;
-    document.querySelectorAll('.btn-tamanho').forEach(btn => {
-        btn.classList.remove('bg-black', 'text-white', 'border-black');
-        btn.classList.add('bg-slate-50', 'text-slate-900');
-    });
-    elemento.classList.remove('bg-slate-50', 'text-slate-900');
-    elemento.classList.add('bg-black', 'text-white', 'border-black');
+function selecionarTamanho(el, tam) {
+    tamanhoSelecionado = tam;
+    document.querySelectorAll('.btn-tamanho').forEach(b => { b.classList.remove('bg-black', 'text-white', 'border-black'); b.classList.add('bg-slate-50', 'text-slate-900'); });
+    el.classList.remove('bg-slate-50', 'text-slate-900');
+    el.classList.add('bg-black', 'text-white', 'border-black');
     validarSelecao();
 }
 
 function validarSelecao() {
-    const btnAdd = document.getElementById('btn-confirmar-add');
+    const btn = document.getElementById('btn-confirmar-add');
     if (tamanhoSelecionado && corSelecionada) {
-        btnAdd.disabled = false;
-        btnAdd.classList.remove('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
-        btnAdd.classList.add('bg-black', 'text-white', 'shadow-lg', 'active:scale-95');
+        btn.disabled = false;
+        btn.classList.remove('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+        btn.classList.add('bg-black', 'text-white', 'shadow-lg', 'active:scale-95');
     }
 }
 
 function confirmarAdicao() {
-    if (produtoSelecionado && tamanhoSelecionado && corSelecionada) {
-        cart.push({ id: produtoSelecionado.id, name: produtoSelecionado.nome, price: produtoSelecionado.preco, size: tamanhoSelecionado, color: corSelecionada });
-        updateCartUI();
-        fecharModal(); 
-    }
+    if (!produtoSelecionado || !tamanhoSelecionado || !corSelecionada) return;
+    cart.push({ id: produtoSelecionado.id, name: produtoSelecionado.nome, price: produtoSelecionado.preco, size: tamanhoSelecionado, color: corSelecionada });
+    salvarCarrinho();
+    updateCartUI();
+    fecharModal();
+    showToast('Adicionado à sacola');
 }
 
-function fecharModal() { document.getElementById('modal-tamanho')?.remove(); }
+function fecharModal() {
+    const m = document.getElementById('modal-tamanho');
+    if (!m) return;
+    m.style.opacity = '0';
+    setTimeout(() => m.remove(), 300);
+    document.body.style.overflow = '';
+}
 
-// --- 5. GESTÃO DA SACOLA (RESOLVE TELA BRANCA) ---
+// =============================================
+// 8. CARRINHO UI
+// =============================================
 function updateCartUI() {
     const list = document.getElementById('cart-items-list');
     const badge = document.getElementById('cart-count');
-    const totalDisplay = document.getElementById('cart-total-value');
-    
-    if (badge) {
-        badge.innerText = cart.length;
-        badge.classList.toggle('hidden', cart.length === 0);
-    }
+    const total = document.getElementById('cart-total-value');
 
-    if (list) {
+    // Badge
+    if (badge) {
         if (cart.length === 0) {
-            // MENSAGEM DE CARRINHO VAZIO (EVITA TELA BRANCA)
-            list.innerHTML = `
-                <div class="flex flex-col items-center justify-center py-20 text-center opacity-40">
-                    <i class="bi bi-bag-x text-5xl mb-4"></i>
-                    <p class="text-[10px] font-bold uppercase tracking-[0.3em]">Sua sacola está vazia</p>
-                    <button onclick="showView('shop-view')" class="mt-6 text-[9px] underline uppercase tracking-widest">Explorar Loja</button>
-                </div>
-            `;
+            badge.style.display = 'none';
         } else {
-            list.innerHTML = cart.map((item, i) => `
-                <div class="flex items-center gap-4 py-4 border-b border-slate-50 animate-in slide-in-from-right-4 duration-300">
-                    <div class="flex-1">
-                        <div class="flex justify-between items-start">
-                            <h4 class="font-semibold text-[13px] text-slate-900 tracking-tight uppercase">${item.name}</h4>
-                            <button onclick="removeFromCart(${i})" class="text-slate-300 hover:text-black transition-colors"><i class="bi bi-x-lg text-xs"></i></button>
-                        </div>
-                        <p class="text-slate-400 text-[9px] uppercase tracking-[0.2em] mt-1">${item.color} — TAM ${item.size}</p>
-                        <p class="font-bold text-slate-900 text-sm mt-2">R$ ${item.price.toFixed(2)}</p>
-                    </div>
-                </div>
-            `).join('');
+            badge.style.display = 'flex';
+            badge.innerText = cart.length;
+            badge.style.transform = 'scale(1.3)';
+            setTimeout(() => badge.style.transform = 'scale(1)', 200);
         }
     }
 
-    const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
-    const valorDesconto = (descontoAtivo < 1) ? (subtotal * descontoAtivo) : descontoAtivo;
-    const subtotalComDesconto = Math.max(0, subtotal - valorDesconto);
-    
-    if (totalDisplay) totalDisplay.innerText = `R$ ${subtotalComDesconto.toFixed(2)}`;
+    // Lista
+    if (list) {
+        if (cart.length === 0) {
+            list.innerHTML = `
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5rem 0;text-align:center;opacity:0.4;">
+                    <i class="bi bi-bag-x" style="font-size:3rem;margin-bottom:1rem;"></i>
+                    <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3em;">Sua sacola está vazia</p>
+                    <button onclick="showView('shop-view')" style="margin-top:1.5rem;font-size:9px;text-decoration:underline;text-transform:uppercase;letter-spacing:0.2em;background:none;border:none;cursor:pointer;">Explorar Loja</button>
+                </div>`;
+        } else {
+            list.innerHTML = cart.map((item, i) => `
+                <div class="cart-item-enter" style="display:flex;align-items:center;gap:1rem;padding:1rem 0;border-bottom:1px solid #f8fafc;">
+                    <div style="flex:1;">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                            <h4 style="font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:-0.01em;">${item.name}</h4>
+                            <button onclick="removeFromCart(${i})" style="color:#cbd5e1;background:none;border:none;cursor:pointer;font-size:12px;padding:0 0 0 8px;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#cbd5e1'">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                        <p style="color:#94a3b8;font-size:9px;text-transform:uppercase;letter-spacing:0.2em;margin-top:4px;">${item.color} — TAM ${item.size}</p>
+                        <p style="font-weight:700;font-size:14px;margin-top:8px;">R$ ${item.price.toFixed(2)}</p>
+                    </div>
+                </div>`).join('');
+        }
+    }
+
+    // Total
+    const subtotal = cart.reduce((s, i) => s + i.price, 0);
+    const desconto = descontoAtivo < 1 ? subtotal * descontoAtivo : descontoAtivo;
+    const comDesconto = Math.max(0, subtotal - desconto);
+    if (total) total.innerText = `R$ ${comDesconto.toFixed(2)}`;
+
     atualizarPrecoFinal();
 }
 
 function removeFromCart(index) {
     cart.splice(index, 1);
+    salvarCarrinho();
     updateCartUI();
 }
 
 function atualizarPrecoFinal() {
-    const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
-    const valorDesconto = (descontoAtivo < 1) ? (subtotal * descontoAtivo) : descontoAtivo;
-    const totalGeral = Math.max(0, subtotal - valorDesconto) + valorFreteAtual;
+    const subtotal = cart.reduce((s, i) => s + i.price, 0);
+    const desconto = descontoAtivo < 1 ? subtotal * descontoAtivo : descontoAtivo;
+    const comDesconto = Math.max(0, subtotal - desconto);
+    const pagInput = document.querySelector('input[name="pagamento"]:checked');
+    const descontoPIX = pagInput && pagInput.value === 'PIX' ? comDesconto * 0.10 : 0;
+    const total = Math.max(0, comDesconto - descontoPIX) + valorFreteAtual;
+
     const btn = document.getElementById('btn-finalizar');
-    if (btn) btn.innerHTML = `FINALIZAR COMPRA • R$ ${totalGeral.toFixed(2)}`;
+    if (btn) btn.innerText = `FINALIZAR COMPRA • R$ ${total.toFixed(2)}`;
+
+    const resumo = document.getElementById('resumo-valores');
+    if (resumo) {
+        let html = `<div style="display:flex;justify-content:space-between;font-size:11px;color:#64748b;"><span>Subtotal</span><span>R$ ${subtotal.toFixed(2)}</span></div>`;
+        if (desconto > 0) html += `<div style="display:flex;justify-content:space-between;font-size:11px;color:#16a34a;"><span>Cupom (${nomeCupomAtivo})</span><span>- R$ ${desconto.toFixed(2)}</span></div>`;
+        if (descontoPIX > 0) html += `<div style="display:flex;justify-content:space-between;font-size:11px;color:#16a34a;"><span>Desconto PIX (10%)</span><span>- R$ ${descontoPIX.toFixed(2)}</span></div>`;
+        if (valorFreteAtual > 0) html += `<div style="display:flex;justify-content:space-between;font-size:11px;color:#64748b;"><span>Frete</span><span>R$ ${valorFreteAtual.toFixed(2)}</span></div>`;
+        resumo.innerHTML = html;
+    }
 }
 
-// --- 6. BUSCA CEP E CUPOM ---
+document.addEventListener('change', e => { if (e.target.name === 'pagamento') atualizarPrecoFinal(); });
+
+// =============================================
+// 9. CEP E CUPOM
+// =============================================
+function formatarCEP(input) {
+    let v = input.value.replace(/\D/g, '');
+    if (v.length > 5) v = v.slice(0, 5) + '-' + v.slice(5, 8);
+    input.value = v;
+}
+
 async function buscaCEP(cep) {
-    const valor = cep.replace(/\D/g, '');
-    if (valor.length === 8) {
-        try {
-            const response = await fetch(`https://viacep.com.br/ws/${valor}/json/`);
-            const data = await response.json();
-            if (!data.erro) {
-                cidadeAtual = `${data.localidade} - ${data.uf}`;
-                document.getElementById('rua').value = `${data.logradouro}, ${data.bairro}`;
-                document.getElementById('secao-frete').classList.remove('hidden');
-                valorFreteAtual = (valor.startsWith('563') || valor.startsWith('489')) ? 10.00 : 35.00;
-                document.getElementById('label-frete').innerText = valorFreteAtual === 10 ? "Entrega Local (Petrolina/Juazeiro)" : "Envio Nacional";
-                document.getElementById('valor-frete').innerText = `R$ ${valorFreteAtual.toFixed(2)}`;
-                atualizarPrecoFinal();
-                document.getElementById('numero').focus();
-            }
-        } catch (e) { console.error("Erro CEP"); }
-    }
+    const v = cep.replace(/\D/g, '');
+    if (v.length !== 8) return;
+    try {
+        const r = await fetch(`https://viacep.com.br/ws/${v}/json/`);
+        const d = await r.json();
+        if (d.erro) { showToast('CEP não encontrado', 'error'); return; }
+        cidadeAtual = `${d.localidade} - ${d.uf}`;
+        document.getElementById('rua').value = `${d.logradouro}, ${d.bairro}`;
+        const frete = document.getElementById('secao-frete');
+        frete.style.display = 'flex';
+        valorFreteAtual = (v.startsWith('563') || v.startsWith('489')) ? 10.00 : 35.00;
+        document.getElementById('label-frete').innerText = valorFreteAtual === 10 ? 'Entrega Local (Petrolina/Juazeiro)' : 'Envio Nacional';
+        document.getElementById('valor-frete').innerText = `R$ ${valorFreteAtual.toFixed(2)}`;
+        atualizarPrecoFinal();
+        document.getElementById('numero').focus();
+    } catch (e) { showToast('Erro ao buscar CEP', 'error'); }
 }
 
 function aplicarCupom() {
@@ -271,125 +332,151 @@ function aplicarCupom() {
     if (CUPONS_VALIDOS[codigo]) {
         nomeCupomAtivo = codigo;
         descontoAtivo = CUPONS_VALIDOS[codigo];
-        document.getElementById('cupom-container').classList.add('hidden');
-        document.getElementById('cupom-feedback').classList.remove('hidden');
+        document.getElementById('cupom-container').style.display = 'none';
+        document.getElementById('cupom-feedback').style.display = 'flex';
         document.getElementById('texto-cupom-aplicado').innerText = `CUPOM ${codigo} APLICADO`;
         updateCartUI();
+        showToast(`Cupom ${codigo} aplicado!`);
     } else {
-        alert("Cupom inválido.");
-        input.value = "";
+        showToast('Cupom inválido', 'error');
+        input.value = '';
     }
 }
 
 function removerCupom() {
-    descontoAtivo = 0; nomeCupomAtivo = "";
-    document.getElementById('cupom-container').classList.remove('hidden');
-    document.getElementById('cupom-feedback').classList.add('hidden');
-    document.getElementById('input-cupom').value = "";
+    descontoAtivo = 0; nomeCupomAtivo = '';
+    document.getElementById('cupom-container').style.display = 'flex';
+    document.getElementById('cupom-feedback').style.display = 'none';
+    document.getElementById('input-cupom').value = '';
     updateCartUI();
 }
 
-// --- 7. FINALIZAÇÃO E ESTOQUE ---
+// =============================================
+// 10. FINALIZAR COMPRA
+// =============================================
 async function finalizarCompra(event) {
     if (event) event.preventDefault();
-    if (cart.length === 0) return alert("Seu carrinho está vazio!");
+    if (cart.length === 0) return showToast('Sua sacola está vazia!', 'error');
 
     const btn = document.getElementById('btn-finalizar');
     const nome = document.getElementById('nome').value;
     const cep = document.getElementById('cep').value;
     const rua = document.getElementById('rua').value;
     const numero = document.getElementById('numero').value;
-    const pagamentoInput = document.querySelector('input[name="pagamento"]:checked');
+    const pagInput = document.querySelector('input[name="pagamento"]:checked');
 
-    if (!nome || !numero || !cep || !pagamentoInput) return alert("Preencha todos os dados de entrega e pagamento.");
-    const pagamento = pagamentoInput.value;
+    if (!nome || !numero || !cep || !pagInput) return showToast('Preencha todos os dados', 'error');
+    const pagamento = pagInput.value;
 
-    if (btn) { btn.innerText = "PROCESSANDO..."; btn.disabled = true; }
+    if (btn) { btn.innerHTML = '<span class="animate-spin" style="margin-right:6px;">⟳</span> PROCESSANDO...'; btn.disabled = true; }
 
     try {
-        // BAIXA DE ESTOQUE
+        // Valida estoque
         for (const item of cart) {
-            const { data: pData } = await supabaseClient.from('produtos').select('estoque').eq('id', item.id).single();
-            const novoEstoque = Math.max(0, (pData?.estoque || 0) - 1);
-            await supabaseClient.from('produtos').update({ estoque: novoEstoque }).eq('id', item.id);
+            const { data: p } = await supabaseClient.from('produtos').select('estoque').eq('id', item.id).single();
+            if (!p || p.estoque <= 0) {
+                showToast(`"${item.name}" esgotou! Removido da sacola.`, 'error');
+                cart = cart.filter(i => i.id !== item.id);
+                salvarCarrinho(); updateCartUI();
+                if (btn) { btn.innerText = 'FINALIZAR NO WHATSAPP'; btn.disabled = false; }
+                return;
+            }
         }
 
-        const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
-        const valorDesconto = (descontoAtivo < 1) ? (subtotal * descontoAtivo) : descontoAtivo;
-        const totalFinal = Math.max(0, subtotal - valorDesconto) + valorFreteAtual;
+        // Baixa de estoque atômica
+        for (const item of cart) {
+            await supabaseClient.rpc('decrementar_estoque', { produto_id: item.id });
+        }
 
-        const { error } = await supabaseClient.from('pedidos').insert([{ nome, cep, rua, numero, total: totalFinal, pagamento, itens_json: cart }]);
-        if (error) throw error;
+        const subtotal = cart.reduce((s, i) => s + i.price, 0);
+        const desconto = descontoAtivo < 1 ? subtotal * descontoAtivo : descontoAtivo;
+        const comDesconto = Math.max(0, subtotal - desconto);
+        const descontoPIX = pagamento === 'PIX' ? comDesconto * 0.10 : 0;
+        const totalFinal = Math.max(0, comDesconto - descontoPIX) + valorFreteAtual;
 
-        let texto = `*NOVO PEDIDO - ÉDEN*\n\n*CLIENTE:* ${nome}\n*CIDADE:* ${cidadeAtual}\n*ENDEREÇO:* ${rua}, nº ${numero}\n\n*ITENS:*\n`;
-        cart.forEach(i => { texto += `- ${i.name} (${i.color}/${i.size})\n`; });
-        if (descontoAtivo > 0) texto += `\n*CUPOM:* ${nomeCupomAtivo} (-R$ ${valorDesconto.toFixed(2)})`;
-        texto += `\n*TOTAL: R$ ${totalFinal.toFixed(2)}*\n*PAGAMENTO:* ${pagamento}`;
-        
-        window.location.href = `https://wa.me/5587988501105?text=${encodeURIComponent(texto)}`;
-        
-        cart = []; updateCartUI();
+        await supabaseClient.from('pedidos').insert([{ nome, cep, rua, numero, total: totalFinal, pagamento, itens_json: cart }]);
+
+        let msg = `*NOVO PEDIDO - ÉDEN*\n\n*CLIENTE:* ${nome}\n*CIDADE:* ${cidadeAtual}\n*ENDEREÇO:* ${rua}, nº ${numero}\n\n*ITENS:*\n`;
+        cart.forEach(i => { msg += `- ${i.name} (${i.color}/${i.size}) — R$ ${i.price.toFixed(2)}\n`; });
+        if (desconto > 0) msg += `\n*CUPOM:* ${nomeCupomAtivo} (-R$ ${desconto.toFixed(2)})`;
+        if (descontoPIX > 0) msg += `\n*DESCONTO PIX:* -R$ ${descontoPIX.toFixed(2)}`;
+        msg += `\n*FRETE:* R$ ${valorFreteAtual.toFixed(2)}`;
+        msg += `\n\n*TOTAL: R$ ${totalFinal.toFixed(2)}*\n*PAGAMENTO:* ${pagamento}`;
+
+        window.location.href = `https://wa.me/5587988501105?text=${encodeURIComponent(msg)}`;
+
+        cart = []; salvarCarrinho(); updateCartUI();
         document.getElementById('order-form').reset();
         removerCupom();
         showView('shop-view');
         carregarProdutos();
 
     } catch (err) {
-        alert("Erro ao processar: " + err.message);
-        if (btn) { btn.innerText = "FINALIZAR COMPRA"; btn.disabled = false; }
+        showToast('Erro ao processar pedido', 'error');
+        if (btn) { btn.innerText = 'FINALIZAR NO WHATSAPP'; btn.disabled = false; }
     }
 }
 
-// --- 8. NAVEGAÇÃO E SCROLL ---
+// =============================================
+// 11. NAVEGAÇÃO
+// =============================================
 function showView(viewId) {
-    // 1. Se o objetivo for APENAS abrir o carrinho lateral
+    const cart = document.getElementById('cart-view');
+    const overlay = document.getElementById('cart-overlay');
+    const shop = document.getElementById('shop-view');
+    const checkout = document.getElementById('checkout-view');
+
     if (viewId === 'cart-view') {
-        document.getElementById('cart-view').classList.remove('hidden');
-        // REMOVEMOS o scrollTo(0,0) daqui para manter a posição da vitrine
-        return; 
+        cart.classList.add('cart-open');
+        overlay.classList.add('visible');
+        document.body.style.overflow = 'hidden';
+        return;
     }
 
-    // 2. Se o objetivo for VOLTAR para a loja vindo do carrinho
+    // Fecha carrinho sempre que sair dele
+    cart.classList.remove('cart-open');
+    overlay.classList.remove('visible');
+    document.body.style.overflow = '';
+
     if (viewId === 'shop-view') {
-        document.getElementById('cart-view').classList.add('hidden');
-        // Se a loja já estiver visível no fundo, não precisamos dar scroll nem esconder nada
-        if (!document.getElementById('shop-view').classList.contains('hidden')) {
-            return;
-        }
+        shop.style.display = '';
+        checkout.style.display = 'none';
+        // Não rola para o topo se já está na loja
+        return;
     }
 
-    // 3. Comportamento para trocas Reais de tela (ex: ir para o Checkout)
-    document.querySelectorAll('.view-section').forEach(v => {
-        // Não escondemos o shop-view se estivermos apenas sobrepondo o carrinho
-        v.classList.add('hidden');
-    });
-
-    const targetView = document.getElementById(viewId);
-    if (targetView) {
-        targetView.classList.remove('hidden');
-        // Só sobe para o topo se estiver mudando de seção principal (ex: Checkout)
+    if (viewId === 'checkout-view') {
+        shop.style.display = 'none';
+        checkout.style.display = 'block';
         window.scrollTo(0, 0);
+        return;
     }
 }
 
 function checkout() {
-    if (cart.length === 0) return alert("Sua sacola está vazia!");
+    if (cart.length === 0) return showToast('Sua sacola está vazia!', 'error');
     showView('checkout-view');
 }
 
-carregarProdutos();
-updateCartUI(); // Inicializa o estado vazio
-
-window.onscroll = function() {
+// =============================================
+// 12. SCROLL DO HEADER
+// =============================================
+window.onscroll = function () {
     const header = document.getElementById('main-header');
     const logo = document.querySelector('.brand-logo');
     if (!header || !logo) return;
-    
-    if (document.body.scrollTop > 50 || document.documentElement.scrollTop > 50) {
-        header.style.paddingTop = "10px"; header.style.paddingBottom = "10px";
-        logo.style.fontSize = "1.3rem";
+    if (window.scrollY > 50) {
+        header.style.paddingTop = '10px'; header.style.paddingBottom = '10px';
+        logo.style.fontSize = '1.3rem';
     } else {
-        header.style.paddingTop = "20px"; header.style.paddingBottom = "20px";
-        logo.style.fontSize = "1.8rem";
+        header.style.paddingTop = '20px'; header.style.paddingBottom = '20px';
+        logo.style.fontSize = '1.8rem';
     }
 };
+
+// =============================================
+// INIT
+// =============================================
+carregarCarrinho();
+carregarProdutos();
+updateCartUI();
