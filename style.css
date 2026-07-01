@@ -220,6 +220,20 @@ body {
 }
 
 /* =============================================
+   RADIO DE PAGAMENTO
+   Escondido visualmente SEM display:none — se não fosse assim,
+   o navegador bloqueia o envio do formulário sem mostrar
+   nenhum erro quando o campo "required" está invisível.
+   ============================================= */
+.radio-pagamento {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* =============================================
    PAGAMENTO
    ============================================= */
 .payment-card {
@@ -266,6 +280,10 @@ input[type="radio"]:checked + .payment-card {
 .animate-spin {
     display: inline-block;
     animation: spin 0.8s linear infinite;
+}
+
+#busca-container {
+    overflow: hidden;
 }
 
 /* =============================================

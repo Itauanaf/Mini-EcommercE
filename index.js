@@ -80,13 +80,39 @@ setInterval(rotacionarAnuncios, 5000);
 // =============================================
 // 6. PRODUTOS
 // =============================================
+let todosProdutos = [];
+
+function skeletonGrid(qtd = 8) {
+    return Array.from({ length: qtd }).map(() => `
+        <div class="flex flex-col h-full bg-white rounded-[2.5rem] p-2">
+            <div class="aspect-[3/4] rounded-[2.2rem] bg-slate-100 mb-4 skeleton-box"></div>
+            <div class="px-3 pb-3">
+                <div class="h-3 w-3/4 rounded-full bg-slate-100 skeleton-box mb-2"></div>
+                <div class="h-4 w-1/3 rounded-full bg-slate-100 skeleton-box"></div>
+            </div>
+        </div>`).join('');
+}
+
 async function carregarProdutos() {
+    const grid = document.getElementById('grid-produtos');
+    grid.innerHTML = skeletonGrid();
+
     const { data: produtos, error } = await supabaseClient
         .from('produtos').select('*').order('created_at', { ascending: false });
 
-    const grid = document.getElementById('grid-produtos');
     if (error || !produtos || produtos.length === 0) {
         grid.innerHTML = "<p class='col-span-full text-center py-10 text-slate-400 italic'>Nenhum produto disponível no momento.</p>";
+        return;
+    }
+
+    todosProdutos = produtos;
+    renderizarGrid(produtos);
+}
+
+function renderizarGrid(produtos) {
+    const grid = document.getElementById('grid-produtos');
+    if (!produtos || produtos.length === 0) {
+        grid.innerHTML = "<p class='col-span-full text-center py-10 text-slate-400 italic'>Nenhum produto encontrado para essa busca.</p>";
         return;
     }
 
@@ -109,6 +135,16 @@ async function carregarProdutos() {
             </div>
         </div>`;
     }).join('');
+}
+
+let debounceBusca;
+function buscarProdutos(termo) {
+    clearTimeout(debounceBusca);
+    debounceBusca = setTimeout(() => {
+        const t = termo.trim().toLowerCase();
+        if (!t) return renderizarGrid(todosProdutos);
+        renderizarGrid(todosProdutos.filter(p => p.nome.toLowerCase().includes(t)));
+    }, 200);
 }
 
 // =============================================
@@ -199,7 +235,12 @@ function validarSelecao() {
 
 function confirmarAdicao() {
     if (!produtoSelecionado || !tamanhoSelecionado || !corSelecionada) return;
-    cart.push({ id: produtoSelecionado.id, name: produtoSelecionado.nome, price: produtoSelecionado.preco, size: tamanhoSelecionado, color: corSelecionada });
+    const existente = cart.find(i => i.id === produtoSelecionado.id && i.size === tamanhoSelecionado && i.color === corSelecionada);
+    if (existente) {
+        existente.qty += 1;
+    } else {
+        cart.push({ id: produtoSelecionado.id, name: produtoSelecionado.nome, price: produtoSelecionado.preco, size: tamanhoSelecionado, color: corSelecionada, qty: 1 });
+    }
     salvarCarrinho();
     updateCartUI();
     fecharModal();
@@ -224,11 +265,12 @@ function updateCartUI() {
 
     // Badge
     if (badge) {
-        if (cart.length === 0) {
+        const totalQtd = cart.reduce((s, i) => s + i.qty, 0);
+        if (totalQtd === 0) {
             badge.style.display = 'none';
         } else {
             badge.style.display = 'flex';
-            badge.innerText = cart.length;
+            badge.innerText = totalQtd;
             badge.style.transform = 'scale(1.3)';
             setTimeout(() => badge.style.transform = 'scale(1)', 200);
         }
@@ -254,19 +296,36 @@ function updateCartUI() {
                             </button>
                         </div>
                         <p style="color:#94a3b8;font-size:9px;text-transform:uppercase;letter-spacing:0.2em;margin-top:4px;">${item.color} — TAM ${item.size}</p>
-                        <p style="font-weight:700;font-size:14px;margin-top:8px;">R$ ${item.price.toFixed(2)}</p>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                            <p style="font-weight:700;font-size:14px;">R$ ${(item.price * item.qty).toFixed(2)}</p>
+                            <div style="display:flex;align-items:center;gap:10px;background:#f8fafc;border-radius:999px;padding:4px 10px;">
+                                <button onclick="alterarQtd(${i},-1)" style="background:none;border:none;cursor:pointer;font-size:14px;color:#334155;width:16px;">−</button>
+                                <span style="font-size:12px;font-weight:700;min-width:14px;text-align:center;">${item.qty}</span>
+                                <button onclick="alterarQtd(${i},1)" style="background:none;border:none;cursor:pointer;font-size:14px;color:#334155;width:16px;">+</button>
+                            </div>
+                        </div>
                     </div>
                 </div>`).join('');
         }
     }
 
     // Total
-    const subtotal = cart.reduce((s, i) => s + i.price, 0);
+    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
     const desconto = descontoAtivo < 1 ? subtotal * descontoAtivo : descontoAtivo;
     const comDesconto = Math.max(0, subtotal - desconto);
     if (total) total.innerText = `R$ ${comDesconto.toFixed(2)}`;
 
     atualizarPrecoFinal();
+}
+
+function alterarQtd(index, delta) {
+    if (!cart[index]) return;
+    cart[index].qty += delta;
+    if (cart[index].qty <= 0) {
+        cart.splice(index, 1);
+    }
+    salvarCarrinho();
+    updateCartUI();
 }
 
 function removeFromCart(index) {
@@ -276,7 +335,7 @@ function removeFromCart(index) {
 }
 
 function atualizarPrecoFinal() {
-    const subtotal = cart.reduce((s, i) => s + i.price, 0);
+    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
     const desconto = descontoAtivo < 1 ? subtotal * descontoAtivo : descontoAtivo;
     const comDesconto = Math.max(0, subtotal - desconto);
     const pagInput = document.querySelector('input[name="pagamento"]:checked');
@@ -371,24 +430,35 @@ async function finalizarCompra(event) {
     if (btn) { btn.innerHTML = '<span class="animate-spin" style="margin-right:6px;">⟳</span> PROCESSANDO...'; btn.disabled = true; }
 
     try {
-        // Valida estoque
+        // Revalida estoque E preço direto do banco (nunca confia no que está no localStorage/cliente)
         for (const item of cart) {
-            const { data: p } = await supabaseClient.from('produtos').select('estoque').eq('id', item.id).single();
-            if (!p || p.estoque <= 0) {
-                showToast(`"${item.name}" esgotou! Removido da sacola.`, 'error');
-                cart = cart.filter(i => i.id !== item.id);
+            const { data: p } = await supabaseClient.from('produtos').select('estoque, preco').eq('id', item.id).single();
+            if (!p || p.estoque < item.qty) {
+                showToast(`"${item.name}" não tem estoque suficiente. Ajustamos sua sacola.`, 'error');
+                if (p) { item.qty = Math.max(0, p.estoque); if (item.qty === 0) cart = cart.filter(i => i !== item); }
+                else cart = cart.filter(i => i !== item);
                 salvarCarrinho(); updateCartUI();
-                if (btn) { btn.innerText = 'FINALIZAR NO WHATSAPP'; btn.disabled = false; }
+                if (btn) { btn.innerHTML = `FINALIZAR COMPRA`; btn.disabled = false; atualizarPrecoFinal(); }
                 return;
+            }
+            item.price = p.preco; // sempre usa o preço real do banco, não o que veio do cliente
+        }
+
+        // Baixa de estoque — se algo falhar no meio, avisa e para (evita baixar estoque de itens já processados sem concluir o pedido)
+        const decrementados = [];
+        for (const item of cart) {
+            for (let n = 0; n < item.qty; n++) {
+                const { error: errDecrement } = await supabaseClient.rpc('decrementar_estoque', { produto_id: item.id });
+                if (errDecrement) {
+                    showToast('Um dos produtos esgotou durante o processo. Recarregue a sacola.', 'error');
+                    if (btn) { btn.innerHTML = `FINALIZAR COMPRA`; btn.disabled = false; }
+                    return;
+                }
+                decrementados.push(item.id);
             }
         }
 
-        // Baixa de estoque atômica
-        for (const item of cart) {
-            await supabaseClient.rpc('decrementar_estoque', { produto_id: item.id });
-        }
-
-        const subtotal = cart.reduce((s, i) => s + i.price, 0);
+        const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
         const desconto = descontoAtivo < 1 ? subtotal * descontoAtivo : descontoAtivo;
         const comDesconto = Math.max(0, subtotal - desconto);
         const descontoPIX = pagamento === 'PIX' ? comDesconto * 0.10 : 0;
@@ -397,7 +467,7 @@ async function finalizarCompra(event) {
         await supabaseClient.from('pedidos').insert([{ nome, cep, rua, numero, total: totalFinal, pagamento, itens_json: cart }]);
 
         let msg = `*NOVO PEDIDO - ÉDEN*\n\n*CLIENTE:* ${nome}\n*CIDADE:* ${cidadeAtual}\n*ENDEREÇO:* ${rua}, nº ${numero}\n\n*ITENS:*\n`;
-        cart.forEach(i => { msg += `- ${i.name} (${i.color}/${i.size}) — R$ ${i.price.toFixed(2)}\n`; });
+        cart.forEach(i => { msg += `- ${i.qty}x ${i.name} (${i.color}/${i.size}) — R$ ${(i.price * i.qty).toFixed(2)}\n`; });
         if (desconto > 0) msg += `\n*CUPOM:* ${nomeCupomAtivo} (-R$ ${desconto.toFixed(2)})`;
         if (descontoPIX > 0) msg += `\n*DESCONTO PIX:* -R$ ${descontoPIX.toFixed(2)}`;
         msg += `\n*FRETE:* R$ ${valorFreteAtual.toFixed(2)}`;
@@ -413,13 +483,27 @@ async function finalizarCompra(event) {
 
     } catch (err) {
         showToast('Erro ao processar pedido', 'error');
-        if (btn) { btn.innerText = 'FINALIZAR NO WHATSAPP'; btn.disabled = false; }
+        if (btn) { btn.innerHTML = `FINALIZAR COMPRA`; btn.disabled = false; }
     }
 }
 
 // =============================================
 // 11. NAVEGAÇÃO
 // =============================================
+function toggleBusca() {
+    const box = document.getElementById('busca-container');
+    const input = document.getElementById('input-busca');
+    const aberto = box.style.maxHeight !== '0px' && box.style.maxHeight !== '';
+    if (aberto) {
+        box.style.maxHeight = '0';
+        input.value = '';
+        buscarProdutos('');
+    } else {
+        box.style.maxHeight = '70px';
+        setTimeout(() => input.focus(), 300);
+    }
+}
+
 function showView(viewId) {
     const cart = document.getElementById('cart-view');
     const overlay = document.getElementById('cart-overlay');

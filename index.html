@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Éden | Store</title>
+    <meta name="description" content="Éden Store — coleção de blusas oversized exclusivas. Entrega rápida para Petrolina e Juazeiro, envio para todo o Brasil.">
+    <meta property="og:title" content="Éden | Store">
+    <meta property="og:description" content="Coleção de blusas oversized exclusivas. Entrega rápida para Petrolina e Juazeiro.">
+    <meta property="og:image" content="assets/banner-desktop.png">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#000000">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -24,10 +30,18 @@
     <header id="main-header" class="fixed top-[34px] w-full bg-white/80 backdrop-blur-md z-50 px-6 py-5 border-b border-slate-50 transition-all duration-300">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <span class="brand-logo" onclick="showView('shop-view')">ÉDEN</span>
-            <button onclick="showView('cart-view')" class="relative p-1">
-                <i class="bi bi-bag-heart text-2xl"></i>
-                <span id="cart-count" class="absolute -top-1 -right-1 bg-black text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold" style="display:none;">0</span>
-            </button>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleBusca()" class="p-1">
+                    <i class="bi bi-search text-xl"></i>
+                </button>
+                <button onclick="showView('cart-view')" class="relative p-1">
+                    <i class="bi bi-bag-heart text-2xl"></i>
+                    <span id="cart-count" class="absolute -top-1 -right-1 bg-black text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold" style="display:none;">0</span>
+                </button>
+            </div>
+        </div>
+        <div id="busca-container" class="max-w-7xl mx-auto overflow-hidden transition-all duration-300" style="max-height:0;">
+            <input type="text" id="input-busca" oninput="buscarProdutos(this.value)" placeholder="Buscar peças..." class="w-full mt-4 p-3 bg-slate-50 rounded-xl outline-none text-sm">
         </div>
     </header>
 
@@ -83,6 +97,9 @@
 
     <!-- CHECKOUT -->
     <section id="checkout-view" style="display:none;" class="w-full max-w-2xl mx-auto px-6 pt-[140px] pb-20">
+        <button onclick="showView('shop-view')" class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-black transition-colors mb-6">
+            <i class="bi bi-arrow-left"></i> Voltar para loja
+        </button>
         <h2 class="text-3xl font-bold italic tracking-tighter mb-10">FINALIZAR PEDIDO</h2>
         <form id="order-form" onsubmit="finalizarCompra(event)" class="space-y-8">
             <div class="space-y-4">
@@ -115,12 +132,12 @@
             <div class="space-y-4">
                 <h3 class="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400 border-b pb-2">Forma de Pagamento</h3>
                 <div class="grid grid-cols-2 gap-4">
-                    <label class="cursor-pointer">
-                        <input type="radio" name="pagamento" value="PIX" class="hidden" required>
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="pagamento" value="PIX" class="radio-pagamento" required>
                         <div class="payment-card p-4 bg-slate-50 rounded-xl text-center text-[10px] font-bold tracking-widest uppercase">PIX (10% OFF)</div>
                     </label>
-                    <label class="cursor-pointer">
-                        <input type="radio" name="pagamento" value="Cartão" class="hidden" required>
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="pagamento" value="Cartão" class="radio-pagamento" required>
                         <div class="payment-card p-4 bg-slate-50 rounded-xl text-center text-[10px] font-bold tracking-widest uppercase">Cartão</div>
                     </label>
                 </div>
