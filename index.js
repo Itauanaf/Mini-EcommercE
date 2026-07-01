@@ -464,7 +464,7 @@ async function finalizarCompra(event) {
         const descontoPIX = pagamento === 'PIX' ? comDesconto * 0.10 : 0;
         const totalFinal = Math.max(0, comDesconto - descontoPIX) + valorFreteAtual;
 
-        await supabaseClient.from('pedidos').insert([{ nome, cep, rua, numero, total: totalFinal, pagamento, itens_json: cart }]);
+        await supabaseClient.from('pedidos').insert([{ nome, cep, rua, numero, cidade: cidadeAtual, total: totalFinal, pagamento, itens_json: cart, status: 'aguardando_whatsapp' }]);
 
         let msg = `*NOVO PEDIDO - ÉDEN*\n\n*CLIENTE:* ${nome}\n*CIDADE:* ${cidadeAtual}\n*ENDEREÇO:* ${rua}, nº ${numero}\n\n*ITENS:*\n`;
         cart.forEach(i => { msg += `- ${i.qty}x ${i.name} (${i.color}/${i.size}) — R$ ${(i.price * i.qty).toFixed(2)}\n`; });
