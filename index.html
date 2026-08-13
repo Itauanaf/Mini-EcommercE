@@ -13,7 +13,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/shop.css">
 </head>
 <body class="bg-white text-slate-900 overflow-x-hidden">
 
@@ -29,19 +29,19 @@
     <!-- HEADER -->
     <header id="main-header" class="fixed top-[34px] w-full bg-white/80 backdrop-blur-md z-50 px-6 py-5 border-b border-slate-50 transition-all duration-300">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <span class="brand-logo" onclick="showView('shop-view')">ÉDEN</span>
+            <span id="brand-logo" class="brand-logo">ÉDEN</span>
             <div class="flex items-center gap-4">
-                <button onclick="toggleBusca()" class="p-1">
+                <button type="button" id="btn-toggle-busca" class="p-1" aria-label="Buscar peças">
                     <i class="bi bi-search text-xl"></i>
                 </button>
-                <button onclick="showView('cart-view')" class="relative p-1">
+                <button type="button" id="btn-open-cart" class="relative p-1" aria-label="Abrir sacola">
                     <i class="bi bi-bag-heart text-2xl"></i>
                     <span id="cart-count" class="absolute -top-1 -right-1 bg-black text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold" style="display:none;">0</span>
                 </button>
             </div>
         </div>
         <div id="busca-container" class="max-w-7xl mx-auto overflow-hidden transition-all duration-300" style="max-height:0;">
-            <input type="text" id="input-busca" oninput="buscarProdutos(this.value)" placeholder="Buscar peças..." class="w-full mt-4 p-3 bg-slate-50 rounded-xl outline-none text-sm">
+            <input type="text" id="input-busca" placeholder="Buscar peças..." class="w-full mt-4 p-3 bg-slate-50 rounded-xl outline-none text-sm">
         </div>
     </header>
 
@@ -57,7 +57,7 @@
                 <span class="text-[10px] md:text-xs font-bold tracking-[0.6em] uppercase mb-4 opacity-90">Drop '1 Disponível</span>
                 <h2 class="hero-title font-bold italic tracking-tighter leading-[0.9] mb-8">ÁGUAS VIVAS<br>OVERSIZED</h2>
                 <div class="flex gap-4">
-                    <button onclick="document.getElementById('grid-produtos').scrollIntoView({behavior:'smooth'})"
+                    <button type="button" id="btn-explorar"
                             class="bg-white text-black px-10 py-4 rounded-full text-[11px] font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-all active:scale-95">
                         Explorar Peças
                     </button>
@@ -75,13 +75,13 @@
     </main>
 
     <!-- OVERLAY ESCURO DO CARRINHO -->
-    <div id="cart-overlay" onclick="showView('shop-view')"></div>
+    <div id="cart-overlay"></div>
 
     <!-- CARRINHO LATERAL — sem nenhuma classe Tailwind de display/layout -->
     <aside id="cart-view">
         <div id="cart-header-inner">
             <h2 class="text-2xl font-bold italic tracking-tighter">SUA SACOLA</h2>
-            <button onclick="showView('shop-view')" class="text-slate-400 hover:text-black transition-colors">
+            <button type="button" id="btn-close-cart" class="text-slate-400 hover:text-black transition-colors" aria-label="Fechar sacola">
                 <i class="bi bi-x-lg text-xl"></i>
             </button>
         </div>
@@ -91,22 +91,22 @@
                 <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:#94a3b8;">Total</span>
                 <span id="cart-total-value" style="font-size:1.25rem;font-weight:700;">R$ 0,00</span>
             </div>
-            <button onclick="checkout()" class="btn-fechar-pedido">Fechar Pedido</button>
+            <button type="button" id="btn-fechar-pedido" class="btn-fechar-pedido">Fechar Pedido</button>
         </div>
     </aside>
 
     <!-- CHECKOUT -->
     <section id="checkout-view" style="display:none;" class="w-full max-w-2xl mx-auto px-6 pt-[140px] pb-20">
-        <button onclick="showView('shop-view')" class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-black transition-colors mb-6">
+        <button type="button" id="btn-voltar-loja" class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-black transition-colors mb-6">
             <i class="bi bi-arrow-left"></i> Voltar para loja
         </button>
         <h2 class="text-3xl font-bold italic tracking-tighter mb-10">FINALIZAR PEDIDO</h2>
-        <form id="order-form" onsubmit="finalizarCompra(event)" class="space-y-8">
+        <form id="order-form" class="space-y-8">
             <div class="space-y-4">
                 <h3 class="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400 border-b pb-2">Informações de Entrega</h3>
                 <input type="text" id="nome" placeholder="Seu nome completo" class="w-full p-4 bg-slate-50 rounded-xl outline-none focus:ring-1 ring-black transition-all" required>
                 <div class="grid grid-cols-2 gap-4">
-                    <input type="text" id="cep" placeholder="CEP" oninput="formatarCEP(this)" onblur="buscaCEP(this.value)" class="w-full p-4 bg-slate-50 rounded-xl outline-none" required maxlength="9">
+                    <input type="text" id="cep" placeholder="CEP" class="w-full p-4 bg-slate-50 rounded-xl outline-none" required maxlength="9">
                     <input type="text" id="numero" placeholder="Nº" class="w-full p-4 bg-slate-50 rounded-xl outline-none" required>
                 </div>
                 <input type="text" id="rua" placeholder="Endereço Completo" class="w-full p-4 bg-slate-50 rounded-xl outline-none" required>
@@ -114,11 +114,11 @@
 
             <div id="cupom-container" class="flex gap-2">
                 <input type="text" id="input-cupom" placeholder="CUPOM DE DESCONTO" class="flex-1 p-4 bg-slate-50 rounded-xl outline-none uppercase text-xs tracking-widest">
-                <button type="button" onclick="aplicarCupom()" class="px-6 bg-slate-100 text-[10px] font-bold uppercase rounded-xl">Aplicar</button>
+                <button type="button" id="btn-aplicar-cupom" class="px-6 bg-slate-100 text-[10px] font-bold uppercase rounded-xl">Aplicar</button>
             </div>
             <div id="cupom-feedback" style="display:none;" class="flex justify-between items-center p-4 bg-green-50 text-green-700 rounded-xl">
                 <span id="texto-cupom-aplicado" class="text-[10px] font-bold tracking-widest"></span>
-                <button type="button" onclick="removerCupom()" class="text-xs underline">Remover</button>
+                <button type="button" id="btn-remover-cupom" class="text-xs underline">Remover</button>
             </div>
 
             <div id="secao-frete" style="display:none;" class="p-4 bg-slate-50 rounded-xl flex justify-between items-center">
@@ -163,6 +163,21 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="index.js"></script>
+    <!-- Scripts clássicos (não type="module") de propósito: assim a loja
+         continua funcionando abrindo o arquivo direto do disco (file://),
+         onde o navegador bloqueia módulos ES. A ordem importa — cada
+         arquivo pendura suas funções no namespace global Eden e alguns
+         leem Eden.* de outro arquivo assim que carregam. -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/shop/state.js"></script>
+    <script src="js/shop/coupons.js"></script>
+    <script src="js/shop/pricing.js"></script>
+    <script src="js/shop/ui.js"></script>
+    <script src="js/shop/cart-ui.js"></script>
+    <script src="js/shop/product-modal.js"></script>
+    <script src="js/shop/products.js"></script>
+    <script src="js/shop/checkout.js"></script>
+    <script src="js/shop/main.js"></script>
 </body>
 </html>

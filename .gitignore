@@ -1,0 +1,11 @@
+# Editores / SO
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Ambiente local
+.env
+.env.local
+
+# Relatórios exportados pelo painel admin
+Relatorio_EdenWear_*.xlsx

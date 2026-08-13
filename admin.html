@@ -3,24 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Vendas - ÉDEN</title>
+    <title>Painel Administrativo - ÉDEN</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
-        .overflow-x-auto::-webkit-scrollbar { display: none; }
-        .overflow-x-auto { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        td {
-            white-space: nowrap;
-            padding: 1.25rem 1.5rem;
-        }
-        #tabela-pedidos td:nth-child(3) {
-            white-space: normal;
-            min-width: 220px;
-            max-width: 300px;
-        }
-    </style>
+    <link rel="stylesheet" href="css/admin.css">
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans">
 
@@ -28,13 +15,13 @@
         <div class="w-full max-w-sm text-center">
             <h2 class="text-[12px] font-bold tracking-[0.8em] text-slate-900 uppercase mb-12">ÉDEN</h2>
             <div class="space-y-4">
-                <input type="email" id="admin-email" placeholder="E-MAIL ADMINISTRATIVO" 
+                <input type="email" id="admin-email" placeholder="E-MAIL ADMINISTRATIVO"
                     class="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 px-6 text-center text-sm tracking-[0.1em] focus:outline-none focus:border-black transition-all">
-                
-                <input type="password" id="admin-password" placeholder="SENHA DE ACESSO" 
+
+                <input type="password" id="admin-password" placeholder="SENHA DE ACESSO"
                     class="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 px-6 text-center text-sm tracking-[0.2em] focus:outline-none focus:border-black transition-all">
-                
-                <button onclick="verificarSenha()" 
+
+                <button type="button" id="btn-login"
                     class="w-full bg-black text-white rounded-2xl py-4 text-[10px] font-bold tracking-[0.3em] uppercase hover:bg-slate-800 transition-all active:scale-95">
                     ACESSAR DASHBOARD
                 </button>
@@ -48,74 +35,151 @@
             <div class="max-w-6xl mx-auto flex justify-between items-center">
                 <div class="flex items-center gap-2">
                     <div class="w-2.5 h-2.5 bg-black rounded-full animate-pulse"></div>
-                    <h1 class="text-lg md:text-xl font-bold tracking-tighter uppercase">Painel de Vendas</h1>
+                    <h1 class="text-lg md:text-xl font-bold tracking-tighter uppercase">Painel ÉDEN</h1>
                 </div>
 
                 <div class="flex gap-2 md:gap-4 items-center">
                     <a href="index.html" class="hidden sm:block text-[10px] font-bold text-slate-400 hover:text-black transition-all uppercase tracking-widest mr-2">Ver Loja</a>
-                    
-                    <button onclick="carregarDadosAdmin()" title="Atualizar Dados" 
+
+                    <button type="button" id="btn-atualizar" title="Atualizar Dados"
                         class="text-slate-400 hover:text-black transition-all flex items-center gap-2 bg-slate-50 p-2.5 md:px-4 md:py-2 rounded-full border border-slate-100">
                         <i class="bi bi-arrow-clockwise"></i>
                         <span class="hidden md:inline text-[10px] font-bold uppercase tracking-widest">Atualizar</span>
                     </button>
 
-                    <button onclick="logout()" title="Sair do Painel"
+                    <button type="button" id="btn-logout" title="Sair do Painel"
                         class="text-red-400 hover:text-red-600 transition-all flex items-center gap-2 bg-red-50 p-2.5 md:px-4 md:py-2 rounded-full border border-red-100">
                         <i class="bi bi-box-arrow-right"></i>
                         <span class="hidden md:inline text-[10px] font-bold uppercase tracking-widest">Sair</span>
                     </button>
                 </div>
             </div>
+
+            <div class="max-w-6xl mx-auto flex gap-2 mt-4 overflow-x-auto no-scrollbar">
+                <button type="button" id="tab-pedidos" class="tab-admin tab-ativa">Pedidos</button>
+                <button type="button" id="tab-produtos" class="tab-admin">Produtos</button>
+                <button type="button" id="tab-cupons" class="tab-admin">Cupons</button>
+            </div>
         </nav>
 
         <main class="max-w-6xl mx-auto p-4 md:p-6">
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-10 mt-4">
-                <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Vendas do Mês</p>
-                    <h2 id="total-mes" class="text-3xl md:text-4xl font-black text-slate-900 leading-none">R$ 0,00</h2>
-                </div>
-                <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Pedidos Totais</p>
-                    <h2 id="qtd-pedidos" class="text-3xl md:text-4xl font-black text-slate-900 leading-none">0</h2>
-                </div>
-                <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Ticket Médio</p>
-                    <h2 id="ticket-medio" class="text-3xl md:text-4xl font-black text-slate-900 leading-none">R$ 0,00</h2>
-                </div>
-            </div>
 
-            <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
-                <div class="p-6 md:p-8 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h3 class="font-bold text-xl tracking-tight">Histórico de Pedidos</h3>
-                        <p class="text-xs text-slate-400">Vendas registradas via site e WhatsApp</p>
+            <!-- ============================= PEDIDOS ============================= -->
+            <section id="view-pedidos">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-10 mt-4">
+                    <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Vendas do Mês</p>
+                        <h2 id="total-mes" class="text-3xl md:text-4xl font-black text-slate-900 leading-none">R$ 0,00</h2>
                     </div>
-                    <button onclick="exportarCSV()" class="w-full sm:w-auto text-[10px] font-black bg-black text-white px-6 py-3 rounded-2xl hover:bg-slate-800 transition-all uppercase tracking-[0.1em]">
-                        Exportar Relatório Profissional
-                    </button>
+                    <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Pedidos Totais</p>
+                        <h2 id="qtd-pedidos" class="text-3xl md:text-4xl font-black text-slate-900 leading-none">0</h2>
+                    </div>
+                    <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Ticket Médio</p>
+                        <h2 id="ticket-medio" class="text-3xl md:text-4xl font-black text-slate-900 leading-none">R$ 0,00</h2>
+                    </div>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-slate-50/50 text-slate-400 text-[10px] uppercase tracking-[0.15em] font-bold">
-                                <th class="p-6">Data</th>
-                                <th class="p-6">Cliente</th>
-                                <th class="p-6">Itens</th>
-                                <th class="p-6">Total</th>
-                                <th class="p-6 text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabela-pedidos" class="text-sm divide-y divide-slate-50"></tbody>
-                    </table>
+
+                <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="p-6 md:p-8 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h3 class="font-bold text-xl tracking-tight">Histórico de Pedidos</h3>
+                            <p class="text-xs text-slate-400">Vendas registradas via site e WhatsApp</p>
+                        </div>
+                        <button type="button" id="btn-exportar" class="w-full sm:w-auto text-[10px] font-black bg-black text-white px-6 py-3 rounded-2xl hover:bg-slate-800 transition-all uppercase tracking-[0.1em]">
+                            Exportar Relatório Profissional
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/50 text-slate-400 text-[10px] uppercase tracking-[0.15em] font-bold">
+                                    <th class="p-6">Data</th>
+                                    <th class="p-6">Cliente</th>
+                                    <th class="p-6">Itens</th>
+                                    <th class="p-6">Total</th>
+                                    <th class="p-6">Status</th>
+                                    <th class="p-6 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-pedidos" class="text-sm divide-y divide-slate-50"></tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            </section>
+
+            <!-- ============================= PRODUTOS ============================= -->
+            <section id="view-produtos" class="hidden">
+                <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden mt-4">
+                    <div class="p-6 md:p-8 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h3 class="font-bold text-xl tracking-tight">Catálogo de Produtos</h3>
+                            <p class="text-xs text-slate-400">Crie, edite e controle o estoque das peças</p>
+                        </div>
+                        <button type="button" id="btn-novo-produto" class="w-full sm:w-auto text-[10px] font-black bg-black text-white px-6 py-3 rounded-2xl hover:bg-slate-800 transition-all uppercase tracking-[0.1em]">
+                            + Novo Produto
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/50 text-slate-400 text-[10px] uppercase tracking-[0.15em] font-bold">
+                                    <th class="p-6">Imagem</th>
+                                    <th class="p-6">Produto</th>
+                                    <th class="p-6">Preço</th>
+                                    <th class="p-6">Estoque</th>
+                                    <th class="p-6">Visibilidade</th>
+                                    <th class="p-6 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-produtos" class="text-sm divide-y divide-slate-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================= CUPONS ============================= -->
+            <section id="view-cupons" class="hidden">
+                <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden mt-4">
+                    <div class="p-6 md:p-8 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h3 class="font-bold text-xl tracking-tight">Cupons de Desconto</h3>
+                            <p class="text-xs text-slate-400">Usados no checkout da loja — mudanças valem na hora, sem precisar reimplantar o site</p>
+                        </div>
+                        <button type="button" id="btn-novo-cupom" class="w-full sm:w-auto text-[10px] font-black bg-black text-white px-6 py-3 rounded-2xl hover:bg-slate-800 transition-all uppercase tracking-[0.1em]">
+                            + Novo Cupom
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/50 text-slate-400 text-[10px] uppercase tracking-[0.15em] font-bold">
+                                    <th class="p-6">Código</th>
+                                    <th class="p-6">Valor</th>
+                                    <th class="p-6">Status</th>
+                                    <th class="p-6 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-cupons" class="text-sm divide-y divide-slate-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
 
         </main>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="admin.js"></script>
+    <!-- Scripts clássicos (não type="module") de propósito — ver nota em
+         index.html. A ordem importa: cada arquivo pendura suas funções
+         no namespace global Eden. -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/admin/auth.js"></script>
+    <script src="js/admin/orders.js"></script>
+    <script src="js/admin/products.js"></script>
+    <script src="js/admin/coupons.js"></script>
+    <script src="js/admin/main.js"></script>
 </body>
 </html>

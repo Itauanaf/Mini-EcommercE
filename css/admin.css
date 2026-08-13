@@ -1,0 +1,63 @@
+/* =============================================
+   SCROLLBARS OCULTAS (tabelas e barra de abas)
+   ============================================= */
+.overflow-x-auto::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.overflow-x-auto,
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+td {
+    white-space: nowrap;
+    padding: 1.25rem 1.5rem;
+}
+#tabela-pedidos td:nth-child(3) {
+    white-space: normal;
+    min-width: 220px;
+    max-width: 300px;
+}
+
+/* =============================================
+   ABAS DO PAINEL (Pedidos / Produtos / Cupons)
+   ============================================= */
+.tab-admin {
+    flex-shrink: 0;
+    padding: 0.6rem 1.25rem;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: #94a3b8;
+    background: #f8fafc;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.tab-admin:hover {
+    color: #0f172a;
+}
+.tab-admin.tab-ativa {
+    background: #000;
+    color: #fff;
+}
+
+/* =============================================
+   SELECT DE STATUS DO PEDIDO
+   ============================================= */
+.status-select {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #475569;
+    cursor: pointer;
+}
+.status-select.status-aguardando_whatsapp { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+.status-select.status-confirmado { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.status-select.status-enviado { background: #f0f9ff; color: #0369a1; border-color: #bae6fd; }
+.status-select.status-entregue { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+.status-select.status-cancelado { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
